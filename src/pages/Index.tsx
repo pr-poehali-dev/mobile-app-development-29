@@ -220,7 +220,7 @@ const PublishForm = ({
           </>
         )}
       </div>
-      <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
     </label>
 
     <div className="space-y-3">
