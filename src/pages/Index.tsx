@@ -212,35 +212,27 @@ const Index = () => {
   );
 };
 
-const ChipSelect = ({ label, options, value, onChange }: {
+const SelectField = ({ label, options, value, onChange, placeholder }: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
+  placeholder?: string;
 }) => (
   <div>
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-sm font-medium">{label}</span>
-      {value && <span className="text-xs font-semibold text-primary">{value}</span>}
-    </div>
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => {
-        const active = value === opt;
-        return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(active ? '' : opt)}
-            className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-              active
-                ? 'gradient-brand text-white border-transparent shadow-md scale-105'
-                : 'bg-muted border-border text-foreground hover:border-primary/50'
-            }`}
-          >
-            {opt}
-          </button>
-        );
-      })}
+    <Label className="text-sm font-medium mb-1.5 block">{label}</Label>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full h-10 rounded-xl border border-input bg-background px-3 pr-9 text-sm appearance-none outline-none focus:ring-2 focus:ring-ring transition-colors ${value ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+      >
+        <option value="">{placeholder || `Выбрать ${label.toLowerCase()}`}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      <Icon name="ChevronDown" size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
     </div>
   </div>
 );
@@ -312,41 +304,37 @@ const PublishForm = ({
         )}
       </div>
 
-      {/* Марка */}
-      <ChipSelect
-        label="Марка"
-        options={MAKES}
-        value={form.make}
-        onChange={(v) => setForm({ ...form, make: v, model: '' })}
-      />
-
-      {/* Модель */}
-      {form.make && (
-        <ChipSelect
+      <div className="space-y-3">
+        <SelectField
+          label="Марка"
+          options={MAKES}
+          value={form.make}
+          onChange={(v) => setForm({ ...form, make: v, model: '' })}
+          placeholder="Выбрать марку"
+        />
+        <SelectField
           label="Модель"
           options={models}
           value={form.model}
           onChange={(v) => setForm({ ...form, model: v })}
+          placeholder={form.make ? 'Выбрать модель' : 'Сначала выберите марку'}
         />
-      )}
-
-      {/* Год */}
-      <ChipSelect
-        label="Год выпуска"
-        options={YEARS}
-        value={form.year}
-        onChange={(v) => setForm({ ...form, year: v })}
-      />
-
-      {/* Двигатель */}
-      <ChipSelect
-        label="Двигатель"
-        options={ENGINES}
-        value={form.engine}
-        onChange={(v) => setForm({ ...form, engine: v })}
-      />
-
-      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField
+            label="Год"
+            options={YEARS}
+            value={form.year}
+            onChange={(v) => setForm({ ...form, year: v })}
+            placeholder="Год"
+          />
+          <SelectField
+            label="Двигатель"
+            options={ENGINES}
+            value={form.engine}
+            onChange={(v) => setForm({ ...form, engine: v })}
+            placeholder="Двигатель"
+          />
+        </div>
         <Field label="Цена, ₽" placeholder="6 950 000" value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
         <Field label="Пробег, км" placeholder="18 400" value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
         <div>
