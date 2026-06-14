@@ -1,0 +1,26 @@
+{
+  "name": "AutoSell — Продажа авто",
+  "short_name": "AutoSell",
+  "description": "Загружай, редактируй и отправляй объявления о продаже авто в Telegram",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#7c3aed",
+  "theme_color": "#7c3aed",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/9625d6ae-3d3c-4a2e-a0f1-fe4430e214fd.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/9625d6ae-3d3c-4a2e-a0f1-fe4430e214fd.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
