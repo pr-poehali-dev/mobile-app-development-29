@@ -11,7 +11,8 @@ type Tab = 'publish' | 'selling' | 'sold' | 'broadcast';
 
 interface Car {
   id: number;
-  title: string;
+  make: string;
+  model: string;
   price: string;
   year: string;
   mileage: string;
@@ -26,7 +27,8 @@ const PLACEHOLDER = 'https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d4
 const initialCars: Car[] = [
   {
     id: 1,
-    title: 'BMW M4 Competition',
+    make: 'BMW',
+    model: 'M4',
     price: '6 950 000',
     year: '2022',
     mileage: '18 400',
@@ -37,7 +39,8 @@ const initialCars: Car[] = [
   },
   {
     id: 2,
-    title: 'Audi RS6 Avant',
+    make: 'Audi',
+    model: 'RS6',
     price: '9 200 000',
     year: '2021',
     mileage: '32 100',
@@ -55,7 +58,32 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'broadcast', label: 'Рассылка', icon: 'Send' },
 ];
 
-const emptyForm = { title: '', price: '', year: '', mileage: '', engine: '', description: '' };
+const MAKES = ['BMW', 'Mercedes', 'Audi', 'Toyota', 'Lexus', 'Porsche', 'Land Rover', 'Volkswagen', 'Kia', 'Hyundai', 'Nissan', 'Ford', 'Chevrolet', 'Mazda', 'Subaru', 'Другая'];
+
+const MODELS: Record<string, string[]> = {
+  BMW: ['X5', 'X6', 'M3', 'M4', 'M5', '3 серия', '5 серия', '7 серия', 'X3', 'X7'],
+  Mercedes: ['C-Class', 'E-Class', 'S-Class', 'GLE', 'GLC', 'AMG GT', 'G-Class', 'CLA'],
+  Audi: ['A4', 'A6', 'A8', 'Q5', 'Q7', 'Q8', 'RS6', 'RS4', 'TT', 'R8'],
+  Toyota: ['Camry', 'Land Cruiser', 'RAV4', 'Highlander', 'Prado', 'Corolla', 'Hilux'],
+  Lexus: ['RX', 'LX', 'GX', 'ES', 'LS', 'NX', 'IS'],
+  Porsche: ['Cayenne', '911', 'Panamera', 'Macan', 'Taycan'],
+  'Land Rover': ['Defender', 'Discovery', 'Range Rover', 'Evoque', 'Freelander'],
+  Volkswagen: ['Tiguan', 'Touareg', 'Golf', 'Passat', 'Polo', 'Multivan'],
+  Kia: ['Sorento', 'Sportage', 'Telluride', 'Stinger', 'EV6'],
+  Hyundai: ['Tucson', 'Santa Fe', 'Palisade', 'Sonata', 'Elantra'],
+  Nissan: ['Patrol', 'X-Trail', 'Qashqai', 'Murano', 'GT-R'],
+  Ford: ['F-150', 'Explorer', 'Mustang', 'Kuga', 'Ranger'],
+  Chevrolet: ['Tahoe', 'Suburban', 'Camaro', 'Traverse'],
+  Mazda: ['CX-5', 'CX-9', 'Mazda6', 'MX-5'],
+  Subaru: ['Outback', 'Forester', 'XV', 'Impreza', 'WRX'],
+  Другая: ['Другая модель'],
+};
+
+const YEARS = Array.from({ length: 20 }, (_, i) => String(2025 - i));
+
+const ENGINES = ['1.4 / 150 л.с.', '1.6 / 110 л.с.', '2.0 / 150 л.с.', '2.0 / 190 л.с.', '2.0 / 249 л.с.', '2.5 / 180 л.с.', '3.0 / 249 л.с.', '3.0 / 340 л.с.', '3.0 / 400 л.с.', '3.0 / 510 л.с.', '4.0 / 600 л.с.', '5.0 / 450 л.с.', 'Электро', 'Гибрид'];
+
+const emptyForm = { make: '', model: '', price: '', year: '', mileage: '', engine: '', description: '' };
 
 const Index = () => {
   const [tab, setTab] = useState<Tab>('publish');
@@ -78,7 +106,7 @@ const Index = () => {
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
 
   const handlePublish = () => {
-    if (!form.title) return;
+    if (!form.make) return;
     setCars((prev) => [
       { id: Date.now(), ...form, photos: photos.length ? photos : [PLACEHOLDER], status: 'selling' },
       ...prev,
@@ -184,6 +212,39 @@ const Index = () => {
   );
 };
 
+const ChipSelect = ({ label, options, value, onChange }: {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) => (
+  <div>
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-sm font-medium">{label}</span>
+      {value && <span className="text-xs font-semibold text-primary">{value}</span>}
+    </div>
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const active = value === opt;
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(active ? '' : opt)}
+            className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+              active
+                ? 'gradient-brand text-white border-transparent shadow-md scale-105'
+                : 'bg-muted border-border text-foreground hover:border-primary/50'
+            }`}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const PublishForm = ({
   form, setForm, photos, handlePhotos, removePhoto, onPublish,
 }: {
@@ -196,9 +257,10 @@ const PublishForm = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const canAdd = photos.length < MAX_PHOTOS;
+  const models = form.make ? (MODELS[form.make] || []) : [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <h2 className="font-display text-2xl font-bold uppercase">Новое объявление</h2>
 
       {/* Photo grid */}
@@ -225,7 +287,6 @@ const PublishForm = ({
               </button>
             </div>
           ))}
-
           {canAdd && (
             <button
               onClick={() => inputRef.current?.click()}
@@ -237,15 +298,7 @@ const PublishForm = ({
           )}
         </div>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          multiple
-          className="hidden"
-          onChange={handlePhotos}
-        />
+        <input ref={inputRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={handlePhotos} />
 
         {photos.length === 0 && (
           <button
@@ -259,16 +312,43 @@ const PublishForm = ({
         )}
       </div>
 
+      {/* Марка */}
+      <ChipSelect
+        label="Марка"
+        options={MAKES}
+        value={form.make}
+        onChange={(v) => setForm({ ...form, make: v, model: '' })}
+      />
+
+      {/* Модель */}
+      {form.make && (
+        <ChipSelect
+          label="Модель"
+          options={models}
+          value={form.model}
+          onChange={(v) => setForm({ ...form, model: v })}
+        />
+      )}
+
+      {/* Год */}
+      <ChipSelect
+        label="Год выпуска"
+        options={YEARS}
+        value={form.year}
+        onChange={(v) => setForm({ ...form, year: v })}
+      />
+
+      {/* Двигатель */}
+      <ChipSelect
+        label="Двигатель"
+        options={ENGINES}
+        value={form.engine}
+        onChange={(v) => setForm({ ...form, engine: v })}
+      />
+
       <div className="space-y-3">
-        <Field label="Марка и модель" placeholder="BMW M4 Competition" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Цена, ₽" placeholder="6 950 000" value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
-          <Field label="Год" placeholder="2022" value={form.year} onChange={(v) => setForm({ ...form, year: v })} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Пробег, км" placeholder="18 400" value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
-          <Field label="Двигатель" placeholder="3.0 / 510 л.с." value={form.engine} onChange={(v) => setForm({ ...form, engine: v })} />
-        </div>
+        <Field label="Цена, ₽" placeholder="6 950 000" value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
+        <Field label="Пробег, км" placeholder="18 400" value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
         <div>
           <Label className="text-sm font-medium mb-1.5 block">Описание</Label>
           <Textarea
@@ -361,7 +441,7 @@ const CarList = ({ cars, action, empty, sold }: {
 
             <div className="p-4 space-y-3">
               <div>
-                <h3 className="font-display text-xl font-bold uppercase leading-tight">{c.title}</h3>
+                <h3 className="font-display text-xl font-bold uppercase leading-tight">{c.make} {c.model}</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <Tag icon="Calendar" text={c.year} />
                   <Tag icon="Gauge" text={`${c.mileage} км`} />
