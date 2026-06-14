@@ -58,30 +58,190 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: 'broadcast', label: 'Рассылка', icon: 'Send' },
 ];
 
-const MAKES = ['BMW', 'Mercedes', 'Audi', 'Toyota', 'Lexus', 'Porsche', 'Land Rover', 'Volkswagen', 'Kia', 'Hyundai', 'Nissan', 'Ford', 'Chevrolet', 'Mazda', 'Subaru', 'Другая'];
+interface ModelSpec {
+  years: [number, number]; // [от, до]
+  engines: string[];
+}
 
-const MODELS: Record<string, string[]> = {
-  BMW: ['X5', 'X6', 'M3', 'M4', 'M5', '3 серия', '5 серия', '7 серия', 'X3', 'X7'],
-  Mercedes: ['C-Class', 'E-Class', 'S-Class', 'GLE', 'GLC', 'AMG GT', 'G-Class', 'CLA'],
-  Audi: ['A4', 'A6', 'A8', 'Q5', 'Q7', 'Q8', 'RS6', 'RS4', 'TT', 'R8'],
-  Toyota: ['Camry', 'Land Cruiser', 'RAV4', 'Highlander', 'Prado', 'Corolla', 'Hilux'],
-  Lexus: ['RX', 'LX', 'GX', 'ES', 'LS', 'NX', 'IS'],
-  Porsche: ['Cayenne', '911', 'Panamera', 'Macan', 'Taycan'],
-  'Land Rover': ['Defender', 'Discovery', 'Range Rover', 'Evoque', 'Freelander'],
-  Volkswagen: ['Tiguan', 'Touareg', 'Golf', 'Passat', 'Polo', 'Multivan'],
-  Kia: ['Sorento', 'Sportage', 'Telluride', 'Stinger', 'EV6'],
-  Hyundai: ['Tucson', 'Santa Fe', 'Palisade', 'Sonata', 'Elantra'],
-  Nissan: ['Patrol', 'X-Trail', 'Qashqai', 'Murano', 'GT-R'],
-  Ford: ['F-150', 'Explorer', 'Mustang', 'Kuga', 'Ranger'],
-  Chevrolet: ['Tahoe', 'Suburban', 'Camaro', 'Traverse'],
-  Mazda: ['CX-5', 'CX-9', 'Mazda6', 'MX-5'],
-  Subaru: ['Outback', 'Forester', 'XV', 'Impreza', 'WRX'],
-  Другая: ['Другая модель'],
+interface CarData {
+  models: Record<string, ModelSpec>;
+}
+
+const CAR_DB: Record<string, CarData> = {
+  BMW: {
+    models: {
+      'X5': { years: [2013, 2025], engines: ['2.0 / 190 л.с.', '2.0 / 249 л.с.', '3.0 / 249 л.с.', '3.0 / 340 л.с.', '3.0 / 400 л.с.', '4.4 / 530 л.с. (M)'] },
+      'X6': { years: [2014, 2025], engines: ['3.0 / 249 л.с.', '3.0 / 340 л.с.', '4.4 / 530 л.с. (M)'] },
+      'X3': { years: [2017, 2025], engines: ['2.0 / 184 л.с.', '2.0 / 249 л.с.', '3.0 / 360 л.с. (M)'] },
+      'X7': { years: [2019, 2025], engines: ['3.0 / 340 л.с.', '4.4 / 530 л.с. (M)'] },
+      'M3': { years: [2014, 2025], engines: ['3.0 / 431 л.с.', '3.0 / 480 л.с.', '3.0 / 510 л.с. Competition'] },
+      'M4': { years: [2014, 2025], engines: ['3.0 / 431 л.с.', '3.0 / 480 л.с.', '3.0 / 510 л.с. Competition'] },
+      'M5': { years: [2017, 2025], engines: ['4.4 / 600 л.с.', '4.4 / 625 л.с. Competition'] },
+      '3 серия': { years: [2018, 2025], engines: ['2.0 / 156 л.с.', '2.0 / 184 л.с.', '2.0 / 258 л.с.', '3.0 / 374 л.с. (M340i)'] },
+      '5 серия': { years: [2016, 2025], engines: ['2.0 / 184 л.с.', '2.0 / 252 л.с.', '3.0 / 340 л.с.', '3.0 / 381 л.с. (M550i)'] },
+      '7 серия': { years: [2015, 2025], engines: ['3.0 / 265 л.с.', '3.0 / 320 л.с.', '4.4 / 530 л.с. (M760i)', 'Электро 544 л.с. (i7)'] },
+    },
+  },
+  Mercedes: {
+    models: {
+      'C-Class': { years: [2014, 2025], engines: ['1.5 / 184 л.с.', '2.0 / 204 л.с.', '2.0 / 258 л.с.', '3.0 / 476 л.с. (AMG C63)'] },
+      'E-Class': { years: [2016, 2025], engines: ['2.0 / 197 л.с.', '2.0 / 258 л.с.', '3.0 / 367 л.с.', '4.0 / 612 л.с. (AMG E63)'] },
+      'S-Class': { years: [2013, 2025], engines: ['3.0 / 367 л.с.', '4.0 / 463 л.с.', '4.0 / 612 л.с. (AMG S63)', 'Электро 659 л.с. (EQS)'] },
+      'GLE': { years: [2015, 2025], engines: ['2.0 / 197 л.с.', '3.0 / 367 л.с.', '4.0 / 612 л.с. (AMG GLE63)'] },
+      'GLC': { years: [2015, 2025], engines: ['2.0 / 204 л.с.', '2.0 / 258 л.с.', '4.0 / 510 л.с. (AMG GLC63)'] },
+      'AMG GT': { years: [2015, 2025], engines: ['4.0 / 476 л.с.', '4.0 / 530 л.с.', '4.0 / 585 л.с. (R)'] },
+      'G-Class': { years: [2012, 2025], engines: ['3.0 / 272 л.с.', '4.0 / 422 л.с.', '4.0 / 585 л.с. (AMG G63)'] },
+      'CLA': { years: [2019, 2025], engines: ['1.3 / 163 л.с.', '2.0 / 224 л.с.', '2.0 / 306 л.с. (AMG)'] },
+    },
+  },
+  Audi: {
+    models: {
+      'A4': { years: [2015, 2025], engines: ['2.0 / 150 л.с.', '2.0 / 190 л.с.', '2.0 / 245 л.с.', '2.9 / 450 л.с. (RS4)'] },
+      'A6': { years: [2018, 2025], engines: ['2.0 / 204 л.с.', '3.0 / 340 л.с.', '2.9 / 450 л.с. (RS6)'] },
+      'A8': { years: [2017, 2025], engines: ['3.0 / 340 л.с.', '4.0 / 460 л.с.', '4.0 / 630 л.с. (S8)'] },
+      'Q5': { years: [2016, 2025], engines: ['2.0 / 204 л.с.', '2.0 / 265 л.с.', '2.9 / 450 л.с. (RSQ5)'] },
+      'Q7': { years: [2015, 2025], engines: ['2.0 / 245 л.с.', '3.0 / 340 л.с.', '4.0 / 600 л.с. (SQ7)'] },
+      'Q8': { years: [2018, 2025], engines: ['3.0 / 286 л.с.', '3.0 / 340 л.с.', '4.0 / 600 л.с. (RSQ8)'] },
+      'RS6': { years: [2019, 2025], engines: ['4.0 / 600 л.с.', '4.0 / 630 л.с. Performance'] },
+      'RS4': { years: [2017, 2025], engines: ['2.9 / 450 л.с.'] },
+      'TT': { years: [2014, 2023], engines: ['2.0 / 197 л.с.', '2.0 / 230 л.с.', '2.5 / 400 л.с. (TT RS)'] },
+      'R8': { years: [2015, 2025], engines: ['5.2 / 540 л.с.', '5.2 / 620 л.с. (Performance)'] },
+    },
+  },
+  Toyota: {
+    models: {
+      'Camry': { years: [2017, 2025], engines: ['2.0 / 150 л.с.', '2.5 / 181 л.с.', '2.5 / 218 л.с. Hybrid'] },
+      'Land Cruiser': { years: [2007, 2025], engines: ['4.0 / 249 л.с.', '4.5 / 309 л.с.', '3.3 Hybrid / 415 л.с.'] },
+      'RAV4': { years: [2018, 2025], engines: ['2.0 / 149 л.с.', '2.5 / 222 л.с. Hybrid'] },
+      'Highlander': { years: [2019, 2025], engines: ['2.5 / 248 л.с. Hybrid', '3.5 / 295 л.с.'] },
+      'Prado': { years: [2009, 2025], engines: ['2.7 / 163 л.с.', '4.0 / 282 л.с.', '2.8 Diesel / 204 л.с.'] },
+      'Corolla': { years: [2018, 2025], engines: ['1.6 / 122 л.с.', '1.8 / 140 л.с.', '2.0 / 180 л.с.'] },
+      'Hilux': { years: [2015, 2025], engines: ['2.4 Diesel / 150 л.с.', '2.8 Diesel / 204 л.с.'] },
+    },
+  },
+  Lexus: {
+    models: {
+      'RX': { years: [2015, 2025], engines: ['2.0 / 238 л.с.', '3.5 / 295 л.с.', '3.5 / 313 л.с. Hybrid'] },
+      'LX': { years: [2015, 2025], engines: ['3.5 Hybrid / 415 л.с.', '5.7 / 367 л.с.'] },
+      'GX': { years: [2009, 2025], engines: ['4.6 / 296 л.с.'] },
+      'ES': { years: [2018, 2025], engines: ['2.5 / 200 л.с. Hybrid', '2.5 / 181 л.с.'] },
+      'LS': { years: [2017, 2025], engines: ['3.5 / 415 л.с. Hybrid', '3.5 / 416 л.с.'] },
+      'NX': { years: [2014, 2025], engines: ['2.0 / 197 л.с.', '2.5 / 243 л.с. Hybrid'] },
+      'IS': { years: [2013, 2025], engines: ['2.0 / 245 л.с.', '3.5 / 316 л.с.', '5.0 / 472 л.с. (IS F)'] },
+    },
+  },
+  Porsche: {
+    models: {
+      'Cayenne': { years: [2017, 2025], engines: ['2.9 / 330 л.с.', '2.9 / 440 л.с. (S)', '4.0 / 550 л.с. (Turbo)', '3.0 Hybrid / 462 л.с.'] },
+      '911': { years: [2011, 2025], engines: ['3.0 / 385 л.с.', '3.0 / 450 л.с. (S)', '3.8 / 650 л.с. (GT3 RS)', '3.7 / 700 л.с. (Turbo S)'] },
+      'Panamera': { years: [2016, 2025], engines: ['2.9 / 330 л.с.', '2.9 / 440 л.с. (4S)', '4.0 / 550 л.с. (Turbo)', 'Гибрид / 462 л.с.'] },
+      'Macan': { years: [2013, 2025], engines: ['2.0 / 245 л.с.', '2.9 / 380 л.с. (GTS)', 'Электро 639 л.с.'] },
+      'Taycan': { years: [2019, 2025], engines: ['Электро 408 л.с.', 'Электро 530 л.с. (4S)', 'Электро 761 л.с. (Turbo S)'] },
+    },
+  },
+  'Land Rover': {
+    models: {
+      'Defender': { years: [2020, 2025], engines: ['2.0 / 300 л.с.', '3.0 / 400 л.с.', '5.0 / 525 л.с. (V8)'] },
+      'Discovery': { years: [2016, 2025], engines: ['2.0 / 249 л.с.', '3.0 / 306 л.с.', '5.0 / 525 л.с. (Sport SVR)'] },
+      'Range Rover': { years: [2012, 2025], engines: ['3.0 / 350 л.с.', '4.4 / 530 л.с.', '5.0 / 565 л.с. (SVR)', 'Гибрид / 510 л.с.'] },
+      'Evoque': { years: [2011, 2025], engines: ['2.0 / 200 л.с.', '2.0 / 249 л.с.', '1.5 Hybrid / 300 л.с.'] },
+      'Freelander': { years: [2006, 2015], engines: ['2.2 Diesel / 150 л.с.', '2.0 / 200 л.с.'] },
+    },
+  },
+  Volkswagen: {
+    models: {
+      'Tiguan': { years: [2016, 2025], engines: ['1.4 / 150 л.с.', '2.0 / 190 л.с.', '2.0 / 245 л.с. (R-Line)'] },
+      'Touareg': { years: [2018, 2025], engines: ['3.0 / 286 л.с.', '3.0 / 340 л.с.', '4.0 / 421 л.с.'] },
+      'Golf': { years: [2012, 2025], engines: ['1.0 / 90 л.с.', '1.5 / 130 л.с.', '2.0 / 300 л.с. (GTI)', '2.0 / 320 л.с. (R)'] },
+      'Passat': { years: [2014, 2025], engines: ['1.4 / 150 л.с.', '2.0 / 190 л.с.', '1.4 Hybrid / 218 л.с.'] },
+      'Polo': { years: [2017, 2025], engines: ['1.0 / 80 л.с.', '1.0 / 110 л.с.', '2.0 / 207 л.с. (GTI)'] },
+      'Multivan': { years: [2003, 2025], engines: ['2.0 / 150 л.с.', '2.0 / 199 л.с.', '1.4 Hybrid / 218 л.с.'] },
+    },
+  },
+  Kia: {
+    models: {
+      'Sorento': { years: [2014, 2025], engines: ['2.0 / 150 л.с.', '2.5 / 180 л.с.', '1.6 Hybrid / 230 л.с.'] },
+      'Sportage': { years: [2015, 2025], engines: ['2.0 / 150 л.с.', '1.6 / 177 л.с.', '1.6 Hybrid / 230 л.с.'] },
+      'Telluride': { years: [2019, 2025], engines: ['3.8 / 291 л.с.'] },
+      'Stinger': { years: [2017, 2023], engines: ['2.5 / 300 л.с.', '3.3 / 368 л.с.'] },
+      'EV6': { years: [2021, 2025], engines: ['Электро 228 л.с.', 'Электро 325 л.с.', 'Электро 585 л.с. (GT)'] },
+    },
+  },
+  Hyundai: {
+    models: {
+      'Tucson': { years: [2015, 2025], engines: ['2.0 / 150 л.с.', '1.6 / 177 л.с.', '1.6 Hybrid / 230 л.с.'] },
+      'Santa Fe': { years: [2018, 2025], engines: ['2.5 / 190 л.с.', '2.5 / 277 л.с.', '1.6 Hybrid / 230 л.с.'] },
+      'Palisade': { years: [2018, 2025], engines: ['3.8 / 291 л.с.', '2.2 Diesel / 202 л.с.'] },
+      'Sonata': { years: [2019, 2025], engines: ['2.0 / 149 л.с.', '2.5 / 180 л.с.', '1.6 Hybrid / 180 л.с.'] },
+      'Elantra': { years: [2015, 2025], engines: ['1.6 / 128 л.с.', '2.0 / 150 л.с.', '2.0 / 277 л.с. (N)'] },
+    },
+  },
+  Nissan: {
+    models: {
+      'Patrol': { years: [2010, 2025], engines: ['5.6 / 405 л.с.', '4.0 / 284 л.с.'] },
+      'X-Trail': { years: [2013, 2025], engines: ['1.6 / 163 л.с.', '2.0 / 144 л.с.', '1.5 Hybrid / 213 л.с.'] },
+      'Qashqai': { years: [2013, 2025], engines: ['1.2 / 115 л.с.', '1.3 / 140 л.с.', '1.5 Hybrid / 158 л.с.'] },
+      'Murano': { years: [2015, 2025], engines: ['3.5 / 249 л.с.'] },
+      'GT-R': { years: [2007, 2024], engines: ['3.8 / 570 л.с.', '3.8 / 600 л.с. (Nismo)'] },
+    },
+  },
+  Ford: {
+    models: {
+      'F-150': { years: [2015, 2025], engines: ['2.7 / 325 л.с.', '3.5 / 400 л.с.', '5.0 / 400 л.с.'] },
+      'Explorer': { years: [2019, 2025], engines: ['2.3 / 300 л.с.', '3.0 Hybrid / 457 л.с.'] },
+      'Mustang': { years: [2014, 2025], engines: ['2.3 / 290 л.с.', '5.0 / 450 л.с.', '5.2 / 760 л.с. (Shelby GT500)'] },
+      'Kuga': { years: [2019, 2025], engines: ['1.5 / 120 л.с.', '2.5 Hybrid / 225 л.с.'] },
+      'Ranger': { years: [2015, 2025], engines: ['2.0 Diesel / 170 л.с.', '2.3 / 205 л.с.', '3.0 Diesel / 240 л.с.'] },
+    },
+  },
+  Chevrolet: {
+    models: {
+      'Tahoe': { years: [2014, 2025], engines: ['5.3 / 360 л.с.', '6.2 / 420 л.с.'] },
+      'Suburban': { years: [2014, 2025], engines: ['5.3 / 360 л.с.', '6.2 / 420 л.с.'] },
+      'Camaro': { years: [2015, 2025], engines: ['2.0 / 275 л.с.', '3.6 / 335 л.с.', '6.2 / 650 л.с. (ZL1)'] },
+      'Traverse': { years: [2017, 2025], engines: ['2.0 / 257 л.с.', '3.6 / 314 л.с.'] },
+    },
+  },
+  Mazda: {
+    models: {
+      'CX-5': { years: [2017, 2025], engines: ['2.0 / 150 л.с.', '2.5 / 194 л.с.', '2.5 Turbo / 230 л.с.'] },
+      'CX-9': { years: [2016, 2025], engines: ['2.5 Turbo / 228 л.с.', '2.5 Turbo / 250 л.с.'] },
+      'Mazda6': { years: [2012, 2023], engines: ['2.0 / 145 л.с.', '2.5 / 194 л.с.'] },
+      'MX-5': { years: [2015, 2025], engines: ['1.5 / 132 л.с.', '2.0 / 184 л.с.'] },
+    },
+  },
+  Subaru: {
+    models: {
+      'Outback': { years: [2014, 2025], engines: ['2.5 / 175 л.с.', '2.4 Turbo / 260 л.с.'] },
+      'Forester': { years: [2018, 2025], engines: ['2.0 / 150 л.с.', '2.0 Hybrid / 150 л.с.'] },
+      'XV': { years: [2017, 2025], engines: ['2.0 / 156 л.с.', '2.0 Hybrid / 136 л.с.'] },
+      'Impreza': { years: [2016, 2025], engines: ['1.6 / 114 л.с.', '2.0 / 156 л.с.'] },
+      'WRX': { years: [2014, 2025], engines: ['2.0 Turbo / 268 л.с.', '2.4 Turbo / 275 л.с.', '2.4 Turbo / 313 л.с. (STI)'] },
+    },
+  },
+  Другая: {
+    models: {
+      'Другая модель': { years: [2000, 2025], engines: ['Бензин', 'Дизель', 'Гибрид', 'Электро'] },
+    },
+  },
 };
 
-const YEARS = Array.from({ length: 20 }, (_, i) => String(2025 - i));
+const MAKES = Object.keys(CAR_DB);
 
-const ENGINES = ['1.4 / 150 л.с.', '1.6 / 110 л.с.', '2.0 / 150 л.с.', '2.0 / 190 л.с.', '2.0 / 249 л.с.', '2.5 / 180 л.с.', '3.0 / 249 л.с.', '3.0 / 340 л.с.', '3.0 / 400 л.с.', '3.0 / 510 л.с.', '4.0 / 600 л.с.', '5.0 / 450 л.с.', 'Электро', 'Гибрид'];
+const MODELS: Record<string, string[]> = Object.fromEntries(
+  Object.entries(CAR_DB).map(([make, data]) => [make, Object.keys(data.models)])
+);
+
+const getYears = (make: string, model: string): string[] => {
+  const spec = CAR_DB[make]?.models[model];
+  if (!spec) return Array.from({ length: 20 }, (_, i) => String(2025 - i));
+  const [from, to] = spec.years;
+  return Array.from({ length: to - from + 1 }, (_, i) => String(to - i));
+};
+
+const getEngines = (make: string, model: string): string[] => {
+  return CAR_DB[make]?.models[model]?.engines ?? ['Бензин', 'Дизель', 'Гибрид', 'Электро'];
+};
 
 const emptyForm = { make: '', model: '', price: '', year: '', mileage: '', engine: '', description: '' };
 
@@ -250,6 +410,8 @@ const PublishForm = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const canAdd = photos.length < MAX_PHOTOS;
   const models = form.make ? (MODELS[form.make] || []) : [];
+  const years = getYears(form.make, form.model);
+  const engines = getEngines(form.make, form.model);
 
   return (
     <div className="space-y-5">
@@ -309,27 +471,27 @@ const PublishForm = ({
           label="Марка"
           options={MAKES}
           value={form.make}
-          onChange={(v) => setForm({ ...form, make: v, model: '' })}
+          onChange={(v) => setForm({ ...form, make: v, model: '', year: '', engine: '' })}
           placeholder="Выбрать марку"
         />
         <SelectField
           label="Модель"
           options={models}
           value={form.model}
-          onChange={(v) => setForm({ ...form, model: v })}
+          onChange={(v) => setForm({ ...form, model: v, year: '', engine: '' })}
           placeholder={form.make ? 'Выбрать модель' : 'Сначала выберите марку'}
         />
         <div className="grid grid-cols-2 gap-3">
           <SelectField
             label="Год"
-            options={YEARS}
+            options={years}
             value={form.year}
             onChange={(v) => setForm({ ...form, year: v })}
             placeholder="Год"
           />
           <SelectField
             label="Двигатель"
-            options={ENGINES}
+            options={engines}
             value={form.engine}
             onChange={(v) => setForm({ ...form, engine: v })}
             placeholder="Двигатель"
