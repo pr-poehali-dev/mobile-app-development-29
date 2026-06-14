@@ -372,30 +372,50 @@ const Index = () => {
   );
 };
 
-const SelectField = ({ label, options, value, onChange, placeholder }: {
+const SelectField = ({ label, options, value, onChange, placeholder, allowCustom }: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-}) => (
-  <div>
-    <Label className="text-sm font-medium mb-1.5 block">{label}</Label>
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full h-10 rounded-xl border border-input bg-background px-3 pr-9 text-sm appearance-none outline-none focus:ring-2 focus:ring-ring transition-colors ${value ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
-      >
-        <option value="">{placeholder || `Выбрать ${label.toLowerCase()}`}</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-      <Icon name="ChevronDown" size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+  allowCustom?: boolean;
+}) => {
+  const knownValues = [...options, ...(allowCustom ? ['Другая'] : [])];
+  const isCustom = allowCustom && value !== '' && !options.includes(value) && value !== 'Другая';
+  const selectValue = isCustom ? 'Другая' : value;
+
+  return (
+    <div>
+      <Label className="text-sm font-medium mb-1.5 block">{label}</Label>
+      <div className="relative">
+        <select
+          value={selectValue}
+          onChange={(e) => {
+            if (e.target.value === 'Другая') onChange('__custom__');
+            else onChange(e.target.value);
+          }}
+          className={`w-full h-10 rounded-xl border border-input bg-background px-3 pr-9 text-sm appearance-none outline-none focus:ring-2 focus:ring-ring transition-colors ${selectValue ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+        >
+          <option value="">{placeholder || `Выбрать ${label.toLowerCase()}`}</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+          {allowCustom && <option value="Другая">✏️ Ввести вручную</option>}
+        </select>
+        <Icon name="ChevronDown" size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+      </div>
+      {(isCustom || value === '__custom__') && (
+        <Input
+          autoFocus
+          placeholder={`Введите ${label.toLowerCase()}`}
+          value={value === '__custom__' ? '' : value}
+          onChange={(e) => onChange(e.target.value)}
+          className="rounded-xl mt-2"
+        />
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const PublishForm = ({
   form, setForm, photos, handlePhotos, removePhoto, onPublish,
@@ -473,6 +493,7 @@ const PublishForm = ({
           value={form.make}
           onChange={(v) => setForm({ ...form, make: v, model: '', year: '', engine: '' })}
           placeholder="Выбрать марку"
+          allowCustom
         />
         <SelectField
           label="Модель"
@@ -480,6 +501,7 @@ const PublishForm = ({
           value={form.model}
           onChange={(v) => setForm({ ...form, model: v, year: '', engine: '' })}
           placeholder={form.make ? 'Выбрать модель' : 'Сначала выберите марку'}
+          allowCustom
         />
         <div className="grid grid-cols-2 gap-3">
           <SelectField
