@@ -1146,7 +1146,7 @@ const CarList = ({ cars, action, empty, sold, groupByMake }: {
             className={`w-full aspect-video object-cover transition-opacity ${sold ? 'grayscale' : ''}`}
           />
           {sold && (
-            <div className="absolute top-3 right-3 bg-foreground text-background text-xs font-bold uppercase px-3 py-1 rounded-full rotate-3">
+            <div className="absolute top-3 right-3 bg-white text-black text-xs font-bold uppercase px-3 py-1 rounded-full rotate-3 shadow">
               {t.soldBadge}
             </div>
           )}
