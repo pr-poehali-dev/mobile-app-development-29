@@ -734,6 +734,9 @@ const Index = () => {
 
   const selling = cars.filter((c) => c.status === 'selling');
   const sold = cars.filter((c) => c.status === 'sold');
+  const knownBuyers = Array.from(
+    new Set(cars.map((c) => (c.buyer || '').trim()).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
   const soldQuery = soldSearch.trim().toLowerCase();
   const soldFiltered = soldQuery
     ? sold.filter((c) =>
@@ -858,7 +861,7 @@ const Index = () => {
               action={(c) => (
                 <div className="space-y-2">
                   <SendCarDialog car={c} />
-                  <SellDialog car={c} onSold={markSold} />
+                  <SellDialog car={c} onSold={markSold} buyers={knownBuyers} />
                 </div>
               )}
             />
@@ -1263,16 +1266,22 @@ const Tag = ({ icon, text }: { icon: string; text: string }) =>
     </span>
   ) : null;
 
-const SellDialog = ({ car, onSold }: { car: Car; onSold: (id: number, buyer: string) => void }) => {
+const SellDialog = ({ car, onSold, buyers }: { car: Car; onSold: (id: number, buyer: string) => void; buyers: string[] }) => {
   const { t, cur } = useSettings();
   const [open, setOpen] = useState(false);
   const [buyer, setBuyer] = useState('');
+  const [focused, setFocused] = useState(false);
 
-  const confirm = (withBuyer: boolean) => {
-    onSold(car.id, withBuyer ? buyer.trim() : '');
+  const confirm = (withBuyer: boolean, value?: string) => {
+    onSold(car.id, withBuyer ? (value ?? buyer).trim() : '');
     setOpen(false);
     setBuyer('');
   };
+
+  const q = buyer.trim().toLowerCase();
+  const suggestions = buyers
+    .filter((b) => b.toLowerCase().includes(q) && b.toLowerCase() !== q)
+    .slice(0, 6);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -1291,14 +1300,33 @@ const SellDialog = ({ car, onSold }: { car: Car; onSold: (id: number, buyer: str
         </DialogHeader>
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">{t.buyerLabel}</Label>
-          <Input
-            value={buyer}
-            onChange={(e) => setBuyer(e.target.value)}
-            placeholder={t.buyerPlaceholder}
-            className="rounded-xl h-11"
-            autoFocus
-            onKeyDown={(e) => e.key === 'Enter' && buyer.trim() && confirm(true)}
-          />
+          <div className="relative">
+            <Input
+              value={buyer}
+              onChange={(e) => setBuyer(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setTimeout(() => setFocused(false), 150)}
+              placeholder={t.buyerPlaceholder}
+              className="rounded-xl h-11"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && buyer.trim() && confirm(true)}
+            />
+            {focused && suggestions.length > 0 && (
+              <div className="absolute z-10 left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                {suggestions.map((b) => (
+                  <button
+                    key={b}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setBuyer(b)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
+                  >
+                    <Icon name="History" size={14} className="text-muted-foreground shrink-0" />
+                    {b}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-2">
           <Button
