@@ -4,6 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import AuthScreen from '@/components/AuthScreen';
 import AdminPanel from '@/components/AdminPanel';
 import { toast } from 'sonner';
@@ -93,6 +101,10 @@ const T = {
     broadcastNoCars: 'Нет авто в продаже для рассылки.',
     sentToGroup: (name: string, sent: number, total: number) => `${name}: отправлено ${sent} из ${total}`,
     broadcastFailed: 'Не удалось отправить. Проверьте, что бот добавлен в группы как админ.',
+    sendCar: 'Разослать', sendCarTitle: 'Куда разослать?',
+    selectGroups: 'Выберите группы для отправки этого авто:',
+    sendSelected: 'Отправить', noGroupsHint: 'Сначала добавьте группы в настройках.',
+    pickAtLeastOne: 'Выберите хотя бы одну группу.',
     // admin panel
     adminTitle: 'Админ-панель', usersStat: 'Пользователей', adsStat: 'Всего объявлений',
     badgeAdmin: 'админ', badgeBlocked: 'заблокирован',
@@ -147,6 +159,10 @@ const T = {
     broadcastNoCars: 'No cars for sale to broadcast.',
     sentToGroup: (name: string, sent: number, total: number) => `${name}: sent ${sent} of ${total}`,
     broadcastFailed: 'Failed to send. Make sure the bot is added to groups as admin.',
+    sendCar: 'Send', sendCarTitle: 'Where to send?',
+    selectGroups: 'Select groups to send this car:',
+    sendSelected: 'Send', noGroupsHint: 'First add groups in settings.',
+    pickAtLeastOne: 'Select at least one group.',
     // admin panel
     adminTitle: 'Admin panel', usersStat: 'Users', adsStat: 'Total ads',
     badgeAdmin: 'admin', badgeBlocked: 'blocked',
@@ -188,6 +204,43 @@ interface Car {
 }
 
 const PLACEHOLDER = 'https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7551188f-b758-4ec5-99b4-c23efe804a13.jpg';
+
+const buildCarText = (c: Car, template: string, symbol: string) =>
+  template
+    .replace(/{make}/g, c.make)
+    .replace(/{model}/g, c.model)
+    .replace(/{year}/g, c.year)
+    .replace(/{price}/g, `${c.price} ${symbol}`)
+    .replace(/{mileage}/g, c.mileage)
+    .replace(/{engine}/g, c.engine)
+    .replace(/{description}/g, c.description);
+
+interface SendResult {
+  group: string;
+  sent: number;
+  total: number;
+}
+
+const sendCarsToGroups = async (
+  cars: Car[],
+  groups: TgGroup[],
+  template: string,
+  symbol: string,
+): Promise<SendResult[]> => {
+  const res = await fetch(BROADCAST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
+    body: JSON.stringify({
+      groups: groups.map((g) => ({ name: g.name, link: g.link })),
+      messages: cars.map((c) => ({ text: buildCarText(c, template, symbol), photos: c.photos })),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.results) {
+    throw new Error(data.error || 'failed');
+  }
+  return data.results as SendResult[];
+};
 
 const buildTabs = (t: (typeof T)['ru'], isAdmin: boolean): { id: Tab; label: string; icon: string }[] => [
   { id: 'publish', label: t.publish, icon: 'PlusCircle' },
@@ -762,13 +815,16 @@ const Index = () => {
               cars={selling}
               empty={t.emptySelling}
               action={(c) => (
-                <Button
-                  onClick={() => markSold(c.id)}
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"
-                >
-                  <Icon name="CheckCircle2" size={18} className="mr-2" />
-                  {t.markSold}
-                </Button>
+                <div className="space-y-2">
+                  <SendCarDialog car={c} />
+                  <Button
+                    onClick={() => markSold(c.id)}
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"
+                  >
+                    <Icon name="CheckCircle2" size={18} className="mr-2" />
+                    {t.markSold}
+                  </Button>
+                </div>
               )}
             />
           )}
@@ -1082,20 +1138,98 @@ const Tag = ({ icon, text }: { icon: string; text: string }) =>
     </span>
   ) : null;
 
+const SendCarDialog = ({ car }: { car: Car }) => {
+  const { settings, t, cur } = useSettings();
+  const groups = settings.groups;
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [sending, setSending] = useState(false);
+
+  const toggle = (id: number) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const send = async () => {
+    if (selected.length === 0) {
+      toast.error(t.pickAtLeastOne);
+      return;
+    }
+    setSending(true);
+    try {
+      const chosen = groups.filter((g) => selected.includes(g.id));
+      const results = await sendCarsToGroups([car], chosen, settings.broadcastText, cur.symbol);
+      const lines = results.map((r) => t.sentToGroup(r.group, r.sent, r.total));
+      toast.success(t.broadcastDone, { description: lines.join('\n') });
+      setOpen(false);
+      setSelected([]);
+    } catch {
+      toast.error(t.broadcastFailed);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="w-full rounded-xl border-[#229ED9]/40 text-[#229ED9] hover:bg-[#229ED9]/10">
+          <Icon name="Send" size={18} className="mr-2" />
+          {t.sendCar}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-2xl max-w-[360px]">
+        <DialogHeader>
+          <DialogTitle>{t.sendCarTitle}</DialogTitle>
+          <DialogDescription>
+            {car.make} {car.model} — {car.price} {cur.symbol}
+          </DialogDescription>
+        </DialogHeader>
+
+        {groups.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">{t.noGroupsHint}</p>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">{t.selectGroups}</p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {groups.map((g) => {
+                const on = selected.includes(g.id);
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => toggle(g.id)}
+                    className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${on ? 'border-primary bg-primary/10' : 'border-border bg-card'}`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ${on ? 'bg-primary border-primary text-white' : 'border-muted-foreground/40'}`}
+                    >
+                      {on && <Icon name="Check" size={14} />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm truncate">{g.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{g.link}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <Button
+              onClick={send}
+              disabled={sending}
+              className="w-full gradient-brand text-white rounded-xl h-11 font-semibold hover:opacity-90"
+            >
+              <Icon name={sending ? 'Loader2' : 'Send'} size={18} className={`mr-2 ${sending ? 'animate-spin' : ''}`} />
+              {sending ? t.sending : t.sendSelected}
+            </Button>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Broadcast = ({ count, cars }: { count: number; cars: Car[] }) => {
   const { settings, t, cur } = useSettings();
   const groups = settings.groups;
   const [sending, setSending] = useState(false);
-
-  const buildText = (c: Car) =>
-    settings.broadcastText
-      .replace(/{make}/g, c.make)
-      .replace(/{model}/g, c.model)
-      .replace(/{year}/g, c.year)
-      .replace(/{price}/g, `${c.price} ${cur.symbol}`)
-      .replace(/{mileage}/g, c.mileage)
-      .replace(/{engine}/g, c.engine)
-      .replace(/{description}/g, c.description);
 
   const send = async () => {
     if (cars.length === 0) {
@@ -1104,22 +1238,8 @@ const Broadcast = ({ count, cars }: { count: number; cars: Car[] }) => {
     }
     setSending(true);
     try {
-      const res = await fetch(BROADCAST_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
-        body: JSON.stringify({
-          groups: groups.map((g) => ({ name: g.name, link: g.link })),
-          messages: cars.map((c) => ({ text: buildText(c), photos: c.photos })),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.results) {
-        toast.error(data.error || t.broadcastFailed);
-        return;
-      }
-      const lines = (data.results as { group: string; sent: number; total: number }[]).map((r) =>
-        t.sentToGroup(r.group, r.sent, r.total),
-      );
+      const results = await sendCarsToGroups(cars, groups, settings.broadcastText, cur.symbol);
+      const lines = results.map((r) => t.sentToGroup(r.group, r.sent, r.total));
       toast.success(t.broadcastDone, { description: lines.join('\n') });
     } catch {
       toast.error(t.broadcastFailed);
