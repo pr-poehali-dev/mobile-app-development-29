@@ -84,13 +84,16 @@ def _register(body: dict, conn) -> dict:
     if cur.fetchone():
         return _resp(409, {'error': 'Такой логин уже занят'})
 
+    cur.execute("SELECT COUNT(*) FROM users")
+    is_admin = cur.fetchone()[0] == 0
+
     cur.execute(
-        "INSERT INTO users (login, password_hash) VALUES (%s, %s) RETURNING id",
-        (login, _make_password_hash(password)),
+        "INSERT INTO users (login, password_hash, is_admin) VALUES (%s, %s, %s) RETURNING id",
+        (login, _make_password_hash(password), is_admin),
     )
     user_id = cur.fetchone()[0]
     token = _create_session(user_id, conn)
-    return _resp(200, {'token': token, 'login': login})
+    return _resp(200, {'token': token, 'login': login, 'isAdmin': is_admin})
 
 
 def _login(body: dict, conn) -> dict:
@@ -98,13 +101,13 @@ def _login(body: dict, conn) -> dict:
     password = body.get('password') or ''
 
     cur = conn.cursor()
-    cur.execute("SELECT id, password_hash FROM users WHERE login = %s", (login,))
+    cur.execute("SELECT id, password_hash, is_admin FROM users WHERE login = %s", (login,))
     row = cur.fetchone()
     if not row or not _check_password(password, row[1]):
         return _resp(401, {'error': 'Неверный логин или пароль'})
 
     token = _create_session(row[0], conn)
-    return _resp(200, {'token': token, 'login': login})
+    return _resp(200, {'token': token, 'login': login, 'isAdmin': bool(row[2])})
 
 
 def _logout(event: dict, conn) -> dict:
@@ -122,7 +125,7 @@ def _me(event: dict, conn) -> dict:
 
     cur = conn.cursor()
     cur.execute(
-        """SELECT u.login FROM sessions s
+        """SELECT u.login, u.is_admin FROM sessions s
            JOIN users u ON u.id = s.user_id
            WHERE s.token = %s AND s.expires_at > NOW()""",
         (token,),
@@ -130,7 +133,7 @@ def _me(event: dict, conn) -> dict:
     row = cur.fetchone()
     if not row:
         return _resp(401, {'error': 'Сессия истекла'})
-    return _resp(200, {'login': row[0]})
+    return _resp(200, {'login': row[0], 'isAdmin': bool(row[1])})
 
 
 def _create_session(user_id: int, conn) -> str:

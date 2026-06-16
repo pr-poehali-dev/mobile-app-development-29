@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AuthScreen from '@/components/AuthScreen';
+import AdminPanel from '@/components/AdminPanel';
 import func2url from '../../backend/func2url.json';
 
 const AUTH_URL = func2url.auth;
@@ -12,7 +13,7 @@ const CARS_URL = func2url.cars;
 
 const MAX_PHOTOS = 15;
 
-type Tab = 'publish' | 'selling' | 'sold' | 'broadcast' | 'settings';
+type Tab = 'publish' | 'selling' | 'sold' | 'broadcast' | 'settings' | 'admin';
 
 type Lang = 'ru' | 'en';
 
@@ -94,12 +95,13 @@ interface Car {
 
 const PLACEHOLDER = 'https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7551188f-b758-4ec5-99b4-c23efe804a13.jpg';
 
-const buildTabs = (t: (typeof T)['ru']): { id: Tab; label: string; icon: string }[] => [
+const buildTabs = (t: (typeof T)['ru'], isAdmin: boolean): { id: Tab; label: string; icon: string }[] => [
   { id: 'publish', label: t.publish, icon: 'PlusCircle' },
   { id: 'selling', label: t.selling, icon: 'Car' },
   { id: 'sold', label: t.sold, icon: 'CheckCircle2' },
   { id: 'broadcast', label: t.broadcast, icon: 'Send' },
   { id: 'settings', label: t.settings, icon: 'Settings' },
+  ...(isAdmin ? [{ id: 'admin' as Tab, label: 'Админ', icon: 'ShieldCheck' }] : []),
 ];
 
 interface ModelSpec {
@@ -472,6 +474,7 @@ const Index = () => {
   const [authChecked, setAuthChecked] = useState(false);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('autosell_token'));
   const [userLogin, setUserLogin] = useState<string>(() => localStorage.getItem('autosell_login') || '');
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => localStorage.getItem('autosell_admin') === '1');
 
   useEffect(() => {
     const saved = localStorage.getItem('autosell_token');
@@ -484,20 +487,25 @@ const Index = () => {
       .then((d) => {
         setToken(saved);
         setUserLogin(d.login);
+        setIsAdmin(!!d.isAdmin);
+        localStorage.setItem('autosell_admin', d.isAdmin ? '1' : '0');
       })
       .catch(() => {
         localStorage.removeItem('autosell_token');
         localStorage.removeItem('autosell_login');
+        localStorage.removeItem('autosell_admin');
         setToken(null);
       })
       .finally(() => setAuthChecked(true));
   }, []);
 
-  const handleAuth = (tk: string, lg: string) => {
+  const handleAuth = (tk: string, lg: string, admin: boolean) => {
     localStorage.setItem('autosell_token', tk);
     localStorage.setItem('autosell_login', lg);
+    localStorage.setItem('autosell_admin', admin ? '1' : '0');
     setToken(tk);
     setUserLogin(lg);
+    setIsAdmin(admin);
   };
 
   const handleLogout = () => {
@@ -507,8 +515,10 @@ const Index = () => {
     }
     localStorage.removeItem('autosell_token');
     localStorage.removeItem('autosell_login');
+    localStorage.removeItem('autosell_admin');
     setToken(null);
     setUserLogin('');
+    setIsAdmin(false);
   };
 
   const [tab, setTab] = useState<Tab>('publish');
@@ -552,7 +562,7 @@ const Index = () => {
 
   const t = T[settings.lang];
   const cur = CURRENCIES.find((c) => c.code === settings.currency) || CURRENCIES[0];
-  const tabs = buildTabs(t);
+  const tabs = buildTabs(t, isAdmin);
 
   const selling = cars.filter((c) => c.status === 'selling');
   const sold = cars.filter((c) => c.status === 'sold');
@@ -683,6 +693,7 @@ const Index = () => {
           )}
           {tab === 'broadcast' && <Broadcast count={selling.length} cars={selling} />}
           {tab === 'settings' && <SettingsPanel />}
+          {tab === 'admin' && isAdmin && <AdminPanel />}
         </main>
 
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card/95 backdrop-blur border-t border-border px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex justify-around z-10">

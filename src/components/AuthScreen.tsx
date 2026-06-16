@@ -8,7 +8,7 @@ import func2url from '../../backend/func2url.json';
 const AUTH_URL = func2url.auth;
 const LOGO = 'https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7452054d-be5a-4e6f-a857-f94069c0936d.jpg';
 
-const AuthScreen = ({ onAuth }: { onAuth: (token: string, login: string) => void }) => {
+const AuthScreen = ({ onAuth }: { onAuth: (token: string, login: string, isAdmin: boolean) => void }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +32,7 @@ const AuthScreen = ({ onAuth }: { onAuth: (token: string, login: string) => void
         setError(data.error || 'Ошибка. Попробуйте снова');
         return;
       }
-      onAuth(data.token, data.login);
+      onAuth(data.token, data.login, !!data.isAdmin);
     } catch {
       setError('Нет соединения с сервером');
     } finally {
