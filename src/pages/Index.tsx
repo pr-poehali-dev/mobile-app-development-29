@@ -40,6 +40,7 @@ const CURRENCIES: Currency[] = [
   { code: 'KZT', symbol: '₸', label: 'Тенге' },
   { code: 'AED', symbol: 'AED', label: 'Дирхам ОАЭ' },
   { code: 'BYN', symbol: 'Br', label: 'Бел. рубль' },
+  { code: 'HKD', symbol: 'HK$', label: 'Гонконг. доллар' },
 ];
 
 interface TgGroup {
