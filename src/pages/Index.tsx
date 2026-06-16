@@ -1187,7 +1187,7 @@ const CarList = ({ cars, action, empty, sold, groupByMake }: {
             </div>
           </div>
           {sold && (c.buyer || c.sold_at) && (
-            <div className="bg-accent/10 text-accent-foreground rounded-xl px-3 py-2 text-sm font-medium space-y-1">
+            <div className="bg-accent/10 text-foreground rounded-xl px-3 py-2 text-sm font-medium space-y-1">
               {c.buyer && (
                 <div className="flex items-center gap-2">
                   <Icon name="UserCheck" size={16} className="text-accent shrink-0" />
