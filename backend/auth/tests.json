@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Me without token returns 401",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401
+    },
+    {
+      "name": "Login with wrong credentials returns 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "login", "login": "nouser", "password": "wrongpass"},
+      "expectedStatus": 401
+    }
+  ]
+}

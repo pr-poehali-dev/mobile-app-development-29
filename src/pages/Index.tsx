@@ -1,9 +1,13 @@
-import { useState, useRef, createContext, useContext } from 'react';
+import { useState, useRef, useEffect, createContext, useContext } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import AuthScreen from '@/components/AuthScreen';
+import func2url from '../../backend/func2url.json';
+
+const AUTH_URL = func2url.auth;
 
 const MAX_PHOTOS = 15;
 
@@ -491,6 +495,48 @@ const getEngines = (make: string, model: string): string[] => {
 const emptyForm = { make: '', model: '', price: '', year: '', mileage: '', engine: '', description: '' };
 
 const Index = () => {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('autosell_token'));
+  const [userLogin, setUserLogin] = useState<string>(() => localStorage.getItem('autosell_login') || '');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('autosell_token');
+    if (!saved) {
+      setAuthChecked(true);
+      return;
+    }
+    fetch(AUTH_URL, { headers: { 'X-Auth-Token': saved } })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => {
+        setToken(saved);
+        setUserLogin(d.login);
+      })
+      .catch(() => {
+        localStorage.removeItem('autosell_token');
+        localStorage.removeItem('autosell_login');
+        setToken(null);
+      })
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  const handleAuth = (tk: string, lg: string) => {
+    localStorage.setItem('autosell_token', tk);
+    localStorage.setItem('autosell_login', lg);
+    setToken(tk);
+    setUserLogin(lg);
+  };
+
+  const handleLogout = () => {
+    const tk = localStorage.getItem('autosell_token');
+    if (tk) {
+      fetch(AUTH_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': tk }, body: JSON.stringify({ action: 'logout' }) }).catch(() => {});
+    }
+    localStorage.removeItem('autosell_token');
+    localStorage.removeItem('autosell_login');
+    setToken(null);
+    setUserLogin('');
+  };
+
   const [tab, setTab] = useState<Tab>('publish');
   const [cars, setCars] = useState<Car[]>(initialCars);
   const [form, setForm] = useState(emptyForm);
@@ -548,6 +594,18 @@ const Index = () => {
   const restore = (id: number) =>
     setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'selling' } : c)));
 
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Icon name="Loader2" size={36} className="animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!token) {
+    return <AuthScreen onAuth={handleAuth} />;
+  }
+
   return (
     <SettingsContext.Provider value={{ settings, setSettings, t, cur }}>
     <div className="min-h-screen bg-background flex justify-center">
@@ -563,6 +621,13 @@ const Index = () => {
                 className="w-7 h-7 rounded-lg object-cover shadow-sm"
               />
               <span className="text-sm font-medium uppercase tracking-widest opacity-90">ALLISALE</span>
+              <button
+                onClick={handleLogout}
+                className="ml-auto flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors rounded-xl px-3 py-1.5 text-xs font-medium"
+              >
+                <Icon name="LogOut" size={14} />
+                {userLogin}
+              </button>
             </div>
             <h1 className="font-display text-4xl font-bold uppercase leading-none">Продажа авто</h1>
             <p className="text-sm opacity-90 mt-2">Загружай, редактируй и отправляй в Telegram</p>
