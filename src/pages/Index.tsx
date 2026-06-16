@@ -88,6 +88,7 @@ const T = {
     selectMake: 'Выбрать марку', selectModel: 'Выбрать модель', selectMakeFirst: 'Сначала выберите марку',
     priceLabel: (s: string) => `Цена, ${s}`, pricePlaceholder: '6 950 000',
     mileageLabel: 'Пробег, км', mileagePlaceholder: '18 400',
+    vinLabel: 'VIN', vinPlaceholder: 'Например, XW8ZZZ...',
     description: 'Описание', descriptionPlaceholder: 'Состояние, комплектация, история...',
     enterManually: '✏️ Ввести вручную',
     selectField: (l: string) => `Выбрать ${l.toLowerCase()}`,
@@ -146,6 +147,7 @@ const T = {
     selectMake: 'Select make', selectModel: 'Select model', selectMakeFirst: 'Select make first',
     priceLabel: (s: string) => `Price, ${s}`, pricePlaceholder: '6 950 000',
     mileageLabel: 'Mileage, km', mileagePlaceholder: '18 400',
+    vinLabel: 'VIN', vinPlaceholder: 'e.g. XW8ZZZ...',
     description: 'Description', descriptionPlaceholder: 'Condition, options, history...',
     enterManually: '✏️ Enter manually',
     selectField: (l: string) => `Select ${l.toLowerCase()}`,
@@ -198,6 +200,7 @@ interface Car {
   year: string;
   mileage: string;
   engine: string;
+  vin: string;
   description: string;
   photos: string[];
   status: 'selling' | 'sold';
@@ -616,7 +619,7 @@ const getEngines = (make: string, model: string): string[] => {
   return CAR_DB[make]?.models[model]?.engines ?? ['Бензин', 'Дизель', 'Гибрид', 'Электро'];
 };
 
-const emptyForm = { make: '', model: '', price: '', year: '', mileage: '', engine: '', description: '' };
+const emptyForm = { make: '', model: '', price: '', year: '', mileage: '', engine: '', vin: '', description: '' };
 
 const Index = () => {
   const [authChecked, setAuthChecked] = useState(false);
@@ -1026,6 +1029,7 @@ const PublishForm = ({
         </div>
         <Field label={t.priceLabel(cur.symbol)} placeholder={t.pricePlaceholder} value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
         <Field label={t.mileageLabel} placeholder={t.mileagePlaceholder} value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
+        <Field label={t.vinLabel} placeholder={t.vinPlaceholder} value={form.vin} onChange={(v) => setForm({ ...form, vin: v.toUpperCase() })} />
         <div>
           <Label className="text-sm font-medium mb-1.5 block">{t.description}</Label>
           <Textarea
@@ -1124,6 +1128,7 @@ const CarList = ({ cars, action, empty, sold }: {
                   <Tag icon="Calendar" text={c.year} />
                   <Tag icon="Gauge" text={c.mileage ? t.mileageValue(c.mileage) : ''} />
                   <Tag icon="Cog" text={c.engine} />
+                  <Tag icon="Fingerprint" text={c.vin ? `VIN ${c.vin}` : ''} />
                 </div>
               </div>
               {c.description && <p className="text-sm text-muted-foreground">{c.description}</p>}

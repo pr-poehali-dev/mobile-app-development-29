@@ -64,7 +64,7 @@ def handler(event: dict, context) -> dict:
 def _list(user_id: int, conn) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute(
-        """SELECT id, make, model, price, year, mileage, engine, description, photos, status
+        """SELECT id, make, model, price, year, mileage, engine, description, photos, status, vin
            FROM cars WHERE user_id = %s ORDER BY created_at DESC, id DESC""",
         (user_id,),
     )
@@ -75,14 +75,14 @@ def _create(event: dict, user_id: int, conn) -> dict:
     b = json.loads(event.get('body') or '{}')
     cur = conn.cursor()
     cur.execute(
-        """INSERT INTO cars (user_id, make, model, price, year, mileage, engine, description, photos, status)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+        """INSERT INTO cars (user_id, make, model, price, year, mileage, engine, description, photos, status, vin)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
         (
             user_id,
             b.get('make', ''), b.get('model', ''), b.get('price', ''),
             b.get('year', ''), b.get('mileage', ''), b.get('engine', ''),
             b.get('description', ''), json.dumps(b.get('photos', [])),
-            b.get('status', 'selling'),
+            b.get('status', 'selling'), b.get('vin', ''),
         ),
     )
     return _resp(200, {'id': cur.fetchone()[0]})
@@ -96,7 +96,7 @@ def _update(event: dict, user_id: int, conn) -> dict:
 
     fields = []
     values = []
-    for key in ('make', 'model', 'price', 'year', 'mileage', 'engine', 'description', 'status'):
+    for key in ('make', 'model', 'price', 'year', 'mileage', 'engine', 'description', 'status', 'vin'):
         if key in b:
             fields.append(f"{key} = %s")
             values.append(b[key])
