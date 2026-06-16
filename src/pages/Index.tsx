@@ -231,8 +231,9 @@ const sendCarsToGroups = async (
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
     body: JSON.stringify({
+      action: 'send',
       groups: groups.map((g) => ({ name: g.name, link: g.link })),
-      messages: cars.map((c) => ({ text: buildCarText(c, template, symbol), photos: c.photos })),
+      messages: cars.map((c) => ({ carId: c.id, text: buildCarText(c, template, symbol), photos: c.photos })),
     }),
   });
   const data = await res.json();
@@ -738,6 +739,11 @@ const Index = () => {
   const changeStatus = async (id: number, status: 'selling' | 'sold') => {
     setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
     await fetch(CARS_URL, { method: 'PUT', headers: carsAuth(), body: JSON.stringify({ id, status }) }).catch(() => {});
+    fetch(BROADCAST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
+      body: JSON.stringify({ action: status === 'sold' ? 'mark_sold' : 'restore', carId: id }),
+    }).catch(() => {});
   };
 
   const markSold = (id: number) => changeStatus(id, 'sold');

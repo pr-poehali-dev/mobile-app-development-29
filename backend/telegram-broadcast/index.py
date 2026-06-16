@@ -67,8 +67,11 @@ def _normalize_chat(link: str) -> str:
     return '@' + link
 
 
+SOLD_MARK = '✅ ПРОДАНО ✅'
+
+
 def handler(event: dict, context) -> dict:
-    '''Безопасная рассылка объявлений в Telegram-группы. Токен бота берётся из секрета на сервере. Доступ только по токену владельца.'''
+    '''Рассылка объявлений в Telegram-группы и пометка ПРОДАНО/возврат. Токен бота берётся из секрета на сервере. Доступ только по токену владельца.'''
     method = event.get('httpMethod', 'POST')
     if method == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'isBase64Encoded': False, 'body': ''}
@@ -87,49 +90,97 @@ def handler(event: dict, context) -> dict:
             return _resp(500, {'error': 'Не задан токен Telegram-бота. Добавьте секрет TELEGRAM_BOT_TOKEN.'})
 
         body = json.loads(event.get('body') or '{}')
-        groups = body.get('groups') or []
-        messages = body.get('messages') or []
+        action = body.get('action', 'send')
 
-        if not groups:
-            return _resp(400, {'error': 'Нет групп для рассылки'})
-        if not messages:
-            return _resp(400, {'error': 'Нет объявлений для отправки'})
-
-        results = []
-        for g in groups:
-            chat_id = _normalize_chat(g.get('link', ''))
-            group_name = g.get('name', chat_id)
-            if not chat_id:
-                results.append({'group': group_name, 'ok': False, 'error': 'Пустая ссылка'})
-                continue
-
-            sent = 0
-            last_error = ''
-            for m in messages:
-                text = m.get('text', '')
-                photo = (m.get('photos') or [None])[0]
-                if photo and str(photo).startswith('http'):
-                    res = _tg_call(bot_token, 'sendPhoto', {
-                        'chat_id': chat_id, 'photo': photo, 'caption': text[:1024],
-                    })
-                else:
-                    res = _tg_call(bot_token, 'sendMessage', {
-                        'chat_id': chat_id, 'text': text,
-                    })
-                if res.get('ok'):
-                    sent += 1
-                else:
-                    last_error = res.get('description', 'Ошибка отправки')
-
-            results.append({
-                'group': group_name,
-                'ok': sent > 0,
-                'sent': sent,
-                'total': len(messages),
-                'error': last_error if sent == 0 else '',
-            })
-
-        any_ok = any(r['ok'] for r in results)
-        return _resp(200 if any_ok else 502, {'results': results})
+        if action == 'send':
+            return _send(body, user_id, bot_token, conn)
+        if action in ('mark_sold', 'restore'):
+            return _toggle_sold(body, user_id, bot_token, conn, sold=(action == 'mark_sold'))
+        return _resp(400, {'error': 'Неизвестное действие'})
     finally:
         conn.close()
+
+
+def _send(body: dict, user_id: int, bot_token: str, conn) -> dict:
+    groups = body.get('groups') or []
+    messages = body.get('messages') or []
+
+    if not groups:
+        return _resp(400, {'error': 'Нет групп для рассылки'})
+    if not messages:
+        return _resp(400, {'error': 'Нет объявлений для отправки'})
+
+    cur = conn.cursor()
+    results = []
+    for g in groups:
+        chat_id = _normalize_chat(g.get('link', ''))
+        group_name = g.get('name', chat_id)
+        if not chat_id:
+            results.append({'group': group_name, 'ok': False, 'error': 'Пустая ссылка'})
+            continue
+
+        sent = 0
+        last_error = ''
+        for m in messages:
+            text = m.get('text', '')
+            car_id = m.get('carId')
+            photo = (m.get('photos') or [None])[0]
+            is_photo = bool(photo and str(photo).startswith('http'))
+            if is_photo:
+                res = _tg_call(bot_token, 'sendPhoto', {
+                    'chat_id': chat_id, 'photo': photo, 'caption': text[:1024],
+                })
+            else:
+                res = _tg_call(bot_token, 'sendMessage', {'chat_id': chat_id, 'text': text})
+
+            if res.get('ok'):
+                sent += 1
+                msg_id = res.get('result', {}).get('message_id')
+                if car_id and msg_id:
+                    cur.execute(
+                        """INSERT INTO sent_messages (car_id, user_id, chat_id, message_id, is_photo, base_text)
+                           VALUES (%s, %s, %s, %s, %s, %s)""",
+                        (car_id, user_id, chat_id, msg_id, is_photo, text[:1024]),
+                    )
+            else:
+                last_error = res.get('description', 'Ошибка отправки')
+
+        results.append({
+            'group': group_name,
+            'ok': sent > 0,
+            'sent': sent,
+            'total': len(messages),
+            'error': last_error if sent == 0 else '',
+        })
+
+    any_ok = any(r['ok'] for r in results)
+    return _resp(200 if any_ok else 502, {'results': results})
+
+
+def _toggle_sold(body: dict, user_id: int, bot_token: str, conn, sold: bool) -> dict:
+    car_id = body.get('carId')
+    if not car_id:
+        return _resp(400, {'error': 'Не указан id авто'})
+
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, chat_id, message_id, is_photo, base_text
+           FROM sent_messages WHERE car_id = %s AND user_id = %s""",
+        (car_id, user_id),
+    )
+    rows = cur.fetchall()
+    updated = 0
+    for _id, chat_id, message_id, is_photo, base_text in rows:
+        new_text = f"{SOLD_MARK}\n\n{base_text}" if sold else base_text
+        if is_photo:
+            res = _tg_call(bot_token, 'editMessageCaption', {
+                'chat_id': chat_id, 'message_id': message_id, 'caption': new_text[:1024],
+            })
+        else:
+            res = _tg_call(bot_token, 'editMessageText', {
+                'chat_id': chat_id, 'message_id': message_id, 'text': new_text,
+            })
+        if res.get('ok'):
+            updated += 1
+
+    return _resp(200, {'ok': True, 'updated': updated, 'total': len(rows)})
