@@ -11,13 +11,13 @@
   "lang": "ru",
   "icons": [
     {
-      "src": "https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/9625d6ae-3d3c-4a2e-a0f1-fe4430e214fd.jpg",
+      "src": "https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7452054d-be5a-4e6f-a857-f94069c0936d.jpg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/9625d6ae-3d3c-4a2e-a0f1-fe4430e214fd.jpg",
+      "src": "https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7452054d-be5a-4e6f-a857-f94069c0936d.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
