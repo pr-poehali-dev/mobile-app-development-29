@@ -64,7 +64,8 @@ def handler(event: dict, context) -> dict:
 def _list(user_id: int, conn) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute(
-        """SELECT id, make, model, price, year, mileage, engine, description, photos, status, vin, buyer
+        """SELECT id, make, model, price, year, mileage, engine, description, photos, status, vin, buyer,
+                  to_char(sold_at, 'YYYY-MM-DD') AS sold_at
            FROM cars WHERE user_id = %s ORDER BY created_at DESC, id DESC""",
         (user_id,),
     )
@@ -103,6 +104,12 @@ def _update(event: dict, user_id: int, conn) -> dict:
     if 'photos' in b:
         fields.append("photos = %s")
         values.append(json.dumps(b['photos']))
+
+    if 'status' in b:
+        if b['status'] == 'sold':
+            fields.append("sold_at = COALESCE(sold_at, NOW())")
+        else:
+            fields.append("sold_at = NULL")
 
     if not fields:
         return _resp(400, {'error': 'Нет данных для изменения'})

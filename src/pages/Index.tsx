@@ -86,6 +86,7 @@ const T = {
     buyerConfirm: 'Подтвердить продажу', buyerSkip: 'Без покупателя',
     buyerTag: (name: string) => `Покупатель: ${name}`,
     searchSold: 'Поиск по покупателю или авто', nothingFound: 'Ничего не найдено',
+    soldDate: (d: string) => `Продано: ${d}`,
     mileageValue: (m: string) => `${m} км`,
     // publish form
     newAd: 'Новое объявление', photos: 'Фотографии', mainPhoto: 'Главное', addPhoto: 'Добавить',
@@ -151,6 +152,7 @@ const T = {
     buyerConfirm: 'Confirm sale', buyerSkip: 'No buyer',
     buyerTag: (name: string) => `Buyer: ${name}`,
     searchSold: 'Search by buyer or car', nothingFound: 'Nothing found',
+    soldDate: (d: string) => `Sold: ${d}`,
     mileageValue: (m: string) => `${m} km`,
     // publish form
     newAd: 'New ad', photos: 'Photos', mainPhoto: 'Main', addPhoto: 'Add',
@@ -214,6 +216,7 @@ interface Car {
   engine: string;
   vin: string;
   buyer: string;
+  sold_at: string | null;
   description: string;
   photos: string[];
   status: 'selling' | 'sold';
@@ -734,7 +737,7 @@ const Index = () => {
   const soldQuery = soldSearch.trim().toLowerCase();
   const soldFiltered = soldQuery
     ? sold.filter((c) =>
-        [c.buyer, c.make, c.model, c.vin].some((f) => (f || '').toLowerCase().includes(soldQuery)),
+        [c.buyer, c.make, c.model, c.vin, c.sold_at].some((f) => (f || '').toLowerCase().includes(soldQuery)),
       )
     : sold;
 
@@ -760,7 +763,14 @@ const Index = () => {
   };
 
   const changeStatus = async (id: number, status: 'selling' | 'sold', buyer?: string) => {
-    setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status, buyer: status === 'sold' ? (buyer || '') : '' } : c)));
+    const today = new Date().toISOString().slice(0, 10);
+    setCars((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, status, buyer: status === 'sold' ? (buyer || '') : '', sold_at: status === 'sold' ? (c.sold_at || today) : null }
+          : c,
+      ),
+    );
     const payload: Record<string, unknown> = { id, status, buyer: status === 'sold' ? (buyer || '') : '' };
     await fetch(CARS_URL, { method: 'PUT', headers: carsAuth(), body: JSON.stringify(payload) }).catch(() => {});
     fetch(BROADCAST_URL, {
@@ -1176,10 +1186,20 @@ const CarList = ({ cars, action, empty, sold, groupByMake }: {
               <Tag icon="Fingerprint" text={c.vin ? `VIN ${c.vin}` : ''} />
             </div>
           </div>
-          {sold && c.buyer && (
-            <div className="flex items-center gap-2 bg-accent/10 text-accent-foreground rounded-xl px-3 py-2 text-sm font-medium">
-              <Icon name="UserCheck" size={16} className="text-accent shrink-0" />
-              {t.buyerTag(c.buyer)}
+          {sold && (c.buyer || c.sold_at) && (
+            <div className="bg-accent/10 text-accent-foreground rounded-xl px-3 py-2 text-sm font-medium space-y-1">
+              {c.buyer && (
+                <div className="flex items-center gap-2">
+                  <Icon name="UserCheck" size={16} className="text-accent shrink-0" />
+                  {t.buyerTag(c.buyer)}
+                </div>
+              )}
+              {c.sold_at && (
+                <div className="flex items-center gap-2">
+                  <Icon name="CalendarCheck" size={16} className="text-accent shrink-0" />
+                  {t.soldDate(c.sold_at)}
+                </div>
+              )}
             </div>
           )}
           {c.description && <p className="text-sm text-muted-foreground">{c.description}</p>}
