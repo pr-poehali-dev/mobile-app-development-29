@@ -60,6 +60,48 @@ const T = {
     groupLink: 'Ссылка или @username', noGroups: 'Пока нет групп. Добавьте первую для рассылки.',
     broadcastTemplate: 'Шаблон объявления', save: 'Сохранить', delete: 'Удалить',
     create: 'Создать группу', cancel: 'Отмена',
+    // tabs
+    admin: 'Админ',
+    // header
+    appTitle: 'Продажа авто', appSubtitle: 'Загружай, редактируй и отправляй в Telegram',
+    statSelling: 'в продаже', statSold: 'продано',
+    // car list
+    emptySelling: 'Пока нет авто в продаже. Опубликуйте первое!',
+    emptySold: 'Здесь появятся проданные авто.',
+    markSold: 'Отметить проданным', restore: 'Вернуть в продажу',
+    soldBadge: 'Продано',
+    mileageValue: (m: string) => `${m} км`,
+    // publish form
+    newAd: 'Новое объявление', photos: 'Фотографии', mainPhoto: 'Главное', addPhoto: 'Добавить',
+    openCamera: 'Открыть камеру', upToPhotos: (n: number) => `до ${n} фотографий`,
+    make: 'Марка', model: 'Модель', year: 'Год', engine: 'Двигатель',
+    selectMake: 'Выбрать марку', selectModel: 'Выбрать модель', selectMakeFirst: 'Сначала выберите марку',
+    priceLabel: (s: string) => `Цена, ${s}`, pricePlaceholder: '6 950 000',
+    mileageLabel: 'Пробег, км', mileagePlaceholder: '18 400',
+    description: 'Описание', descriptionPlaceholder: 'Состояние, комплектация, история...',
+    enterManually: '✏️ Ввести вручную',
+    selectField: (l: string) => `Выбрать ${l.toLowerCase()}`,
+    enterField: (l: string) => `Введите ${l.toLowerCase()}`,
+    // broadcast
+    broadcastTitle: 'Рассылка в Telegram',
+    broadcastNoGroups: 'Сначала добавьте Telegram-группы в разделе «Настройки», чтобы запускать рассылку.',
+    readyToSend: 'К отправке готово:',
+    broadcastSummary: (count: number, groups: number) => `${count} авто будут разосланы в ${groups} групп(ы).`,
+    // admin panel
+    adminTitle: 'Админ-панель', usersStat: 'Пользователей', adsStat: 'Всего объявлений',
+    badgeAdmin: 'админ', badgeBlocked: 'заблокирован',
+    userCounts: (ads: number, sel: number, sld: number) => `${ads} объявл. · ${sel} в продаже · ${sld} продано`,
+    block: 'Заблокировать', unblock: 'Разблокировать',
+    noAds: 'Нет объявлений',
+    statusSold: 'продано', statusSelling: 'в продаже',
+    deleteAria: 'Удалить',
+    confirmDeleteCar: 'Удалить объявление?', confirmBlockUser: 'Заблокировать пользователя?',
+    confirmUnblockUser: 'Разблокировать пользователя?',
+    confirmDeleteCarDesc: (title: string) => `«${title}» будет удалено без возможности восстановления.`,
+    confirmBlockUserDesc: (login: string) => `«${login}» потеряет доступ ко входу в приложение.`,
+    confirmUnblockUserDesc: (login: string) => `«${login}» снова сможет входить в приложение.`,
+    confirm: 'Подтвердить',
+    loadError: 'Не удалось загрузить данные',
   },
   en: {
     publish: 'Publish', selling: 'For sale', sold: 'Sold', broadcast: 'Broadcast', settings: 'Settings',
@@ -68,6 +110,48 @@ const T = {
     groupLink: 'Link or @username', noGroups: 'No groups yet. Add the first one for broadcast.',
     broadcastTemplate: 'Ad template', save: 'Save', delete: 'Delete',
     create: 'Create group', cancel: 'Cancel',
+    // tabs
+    admin: 'Admin',
+    // header
+    appTitle: 'Car sales', appSubtitle: 'Upload, edit and send to Telegram',
+    statSelling: 'for sale', statSold: 'sold',
+    // car list
+    emptySelling: 'No cars for sale yet. Publish the first one!',
+    emptySold: 'Sold cars will appear here.',
+    markSold: 'Mark as sold', restore: 'Return to sale',
+    soldBadge: 'Sold',
+    mileageValue: (m: string) => `${m} km`,
+    // publish form
+    newAd: 'New ad', photos: 'Photos', mainPhoto: 'Main', addPhoto: 'Add',
+    openCamera: 'Open camera', upToPhotos: (n: number) => `up to ${n} photos`,
+    make: 'Make', model: 'Model', year: 'Year', engine: 'Engine',
+    selectMake: 'Select make', selectModel: 'Select model', selectMakeFirst: 'Select make first',
+    priceLabel: (s: string) => `Price, ${s}`, pricePlaceholder: '6 950 000',
+    mileageLabel: 'Mileage, km', mileagePlaceholder: '18 400',
+    description: 'Description', descriptionPlaceholder: 'Condition, options, history...',
+    enterManually: '✏️ Enter manually',
+    selectField: (l: string) => `Select ${l.toLowerCase()}`,
+    enterField: (l: string) => `Enter ${l.toLowerCase()}`,
+    // broadcast
+    broadcastTitle: 'Broadcast to Telegram',
+    broadcastNoGroups: 'First add Telegram groups in the «Settings» section to start broadcasting.',
+    readyToSend: 'Ready to send:',
+    broadcastSummary: (count: number, groups: number) => `${count} car(s) will be sent to ${groups} group(s).`,
+    // admin panel
+    adminTitle: 'Admin panel', usersStat: 'Users', adsStat: 'Total ads',
+    badgeAdmin: 'admin', badgeBlocked: 'blocked',
+    userCounts: (ads: number, sel: number, sld: number) => `${ads} ads · ${sel} for sale · ${sld} sold`,
+    block: 'Block', unblock: 'Unblock',
+    noAds: 'No ads',
+    statusSold: 'sold', statusSelling: 'for sale',
+    deleteAria: 'Delete',
+    confirmDeleteCar: 'Delete ad?', confirmBlockUser: 'Block user?',
+    confirmUnblockUser: 'Unblock user?',
+    confirmDeleteCarDesc: (title: string) => `«${title}» will be deleted permanently.`,
+    confirmBlockUserDesc: (login: string) => `«${login}» will lose access to log in to the app.`,
+    confirmUnblockUserDesc: (login: string) => `«${login}» will be able to log in to the app again.`,
+    confirm: 'Confirm',
+    loadError: 'Failed to load data',
   },
 };
 
@@ -78,7 +162,7 @@ const SettingsContext = createContext<{
   cur: Currency;
 }>({ settings: defaultSettings, setSettings: () => {}, t: T.ru, cur: CURRENCIES[0] });
 
-const useSettings = () => useContext(SettingsContext);
+export const useSettings = () => useContext(SettingsContext);
 
 interface Car {
   id: number;
@@ -101,7 +185,7 @@ const buildTabs = (t: (typeof T)['ru'], isAdmin: boolean): { id: Tab; label: str
   { id: 'sold', label: t.sold, icon: 'CheckCircle2' },
   { id: 'broadcast', label: t.broadcast, icon: 'Send' },
   { id: 'settings', label: t.settings, icon: 'Settings' },
-  ...(isAdmin ? [{ id: 'admin' as Tab, label: 'Админ', icon: 'ShieldCheck' }] : []),
+  ...(isAdmin ? [{ id: 'admin' as Tab, label: t.admin, icon: 'ShieldCheck' }] : []),
 ];
 
 interface ModelSpec {
@@ -632,16 +716,16 @@ const Index = () => {
                 {userLogin}
               </button>
             </div>
-            <h1 className="font-display text-4xl font-bold uppercase leading-none">Продажа авто</h1>
-            <p className="text-sm opacity-90 mt-2">Загружай, редактируй и отправляй в Telegram</p>
+            <h1 className="font-display text-4xl font-bold uppercase leading-none">{t.appTitle}</h1>
+            <p className="text-sm opacity-90 mt-2">{t.appSubtitle}</p>
             <div className="flex gap-3 mt-5">
               <div className="bg-white/15 backdrop-blur rounded-2xl px-4 py-2 flex-1">
                 <div className="font-display text-2xl font-bold">{selling.length}</div>
-                <div className="text-xs opacity-90">в продаже</div>
+                <div className="text-xs opacity-90">{t.statSelling}</div>
               </div>
               <div className="bg-white/15 backdrop-blur rounded-2xl px-4 py-2 flex-1">
                 <div className="font-display text-2xl font-bold">{sold.length}</div>
-                <div className="text-xs opacity-90">продано</div>
+                <div className="text-xs opacity-90">{t.statSold}</div>
               </div>
             </div>
           </div>
@@ -666,14 +750,14 @@ const Index = () => {
           {tab === 'selling' && !carsLoading && (
             <CarList
               cars={selling}
-              empty="Пока нет авто в продаже. Опубликуйте первое!"
+              empty={t.emptySelling}
               action={(c) => (
                 <Button
                   onClick={() => markSold(c.id)}
                   className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"
                 >
                   <Icon name="CheckCircle2" size={18} className="mr-2" />
-                  Отметить проданным
+                  {t.markSold}
                 </Button>
               )}
             />
@@ -682,11 +766,11 @@ const Index = () => {
             <CarList
               cars={sold}
               sold
-              empty="Здесь появятся проданные авто."
+              empty={t.emptySold}
               action={(c) => (
                 <Button variant="outline" onClick={() => restore(c.id)} className="w-full rounded-xl">
                   <Icon name="Undo2" size={18} className="mr-2" />
-                  Вернуть в продажу
+                  {t.restore}
                 </Button>
               )}
             />
@@ -727,6 +811,7 @@ const SelectField = ({ label, options, value, onChange, placeholder, allowCustom
   placeholder?: string;
   allowCustom?: boolean;
 }) => {
+  const { t } = useSettings();
   const knownValues = [...options, ...(allowCustom ? ['Другая'] : [])];
   const isCustom = allowCustom && value !== '' && !options.includes(value) && value !== 'Другая';
   const selectValue = isCustom ? 'Другая' : value;
@@ -743,18 +828,18 @@ const SelectField = ({ label, options, value, onChange, placeholder, allowCustom
           }}
           className={`w-full h-10 rounded-xl border border-input bg-background px-3 pr-9 text-sm appearance-none outline-none focus:ring-2 focus:ring-ring transition-colors ${selectValue ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
         >
-          <option value="">{placeholder || `Выбрать ${label.toLowerCase()}`}</option>
+          <option value="">{placeholder || t.selectField(label)}</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
           ))}
-          {allowCustom && <option value="Другая">✏️ Ввести вручную</option>}
+          {allowCustom && <option value="Другая">{t.enterManually}</option>}
         </select>
         <Icon name="ChevronDown" size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
       </div>
       {(isCustom || value === '__custom__') && (
         <Input
           autoFocus
-          placeholder={`Введите ${label.toLowerCase()}`}
+          placeholder={t.enterField(label)}
           value={value === '__custom__' ? '' : value}
           onChange={(e) => onChange(e.target.value)}
           className="rounded-xl mt-2"
@@ -779,16 +864,16 @@ const PublishForm = ({
   const models = form.make ? (MODELS[form.make] || []) : [];
   const years = getYears(form.make, form.model);
   const engines = getEngines(form.make, form.model);
-  const { cur } = useSettings();
+  const { cur, t } = useSettings();
 
   return (
     <div className="space-y-5">
-      <h2 className="font-display text-2xl font-bold uppercase">Новое объявление</h2>
+      <h2 className="font-display text-2xl font-bold uppercase">{t.newAd}</h2>
 
       {/* Photo grid */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Фотографии</span>
+          <span className="text-sm font-medium">{t.photos}</span>
           <span className="text-xs text-muted-foreground">{photos.length} / {MAX_PHOTOS}</span>
         </div>
 
@@ -798,7 +883,7 @@ const PublishForm = ({
               <img src={src} alt="" className="w-full h-full object-cover" />
               {idx === 0 && (
                 <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                  Главное
+                  {t.mainPhoto}
                 </span>
               )}
               <button
@@ -815,7 +900,7 @@ const PublishForm = ({
               className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/40 flex flex-col items-center justify-center hover:border-primary transition-colors"
             >
               <Icon name="Camera" size={24} className="text-muted-foreground mb-1" />
-              <span className="text-[10px] text-muted-foreground">Добавить</span>
+              <span className="text-[10px] text-muted-foreground">{t.addPhoto}</span>
             </button>
           )}
         </div>
@@ -828,51 +913,51 @@ const PublishForm = ({
             className="w-full mt-2 aspect-video rounded-2xl border-2 border-dashed border-border bg-muted/50 flex flex-col items-center justify-center hover:border-primary transition-colors"
           >
             <Icon name="Camera" size={40} className="text-muted-foreground mb-2" />
-            <span className="text-sm text-muted-foreground font-medium">Открыть камеру</span>
-            <span className="text-xs text-muted-foreground mt-1">до {MAX_PHOTOS} фотографий</span>
+            <span className="text-sm text-muted-foreground font-medium">{t.openCamera}</span>
+            <span className="text-xs text-muted-foreground mt-1">{t.upToPhotos(MAX_PHOTOS)}</span>
           </button>
         )}
       </div>
 
       <div className="space-y-3">
         <SelectField
-          label="Марка"
+          label={t.make}
           options={MAKES}
           value={form.make}
           onChange={(v) => setForm({ ...form, make: v, model: '', year: '', engine: '' })}
-          placeholder="Выбрать марку"
+          placeholder={t.selectMake}
           allowCustom
         />
         <SelectField
-          label="Модель"
+          label={t.model}
           options={models}
           value={form.model}
           onChange={(v) => setForm({ ...form, model: v, year: '', engine: '' })}
-          placeholder={form.make ? 'Выбрать модель' : 'Сначала выберите марку'}
+          placeholder={form.make ? t.selectModel : t.selectMakeFirst}
           allowCustom
         />
         <div className="grid grid-cols-2 gap-3">
           <SelectField
-            label="Год"
+            label={t.year}
             options={years}
             value={form.year}
             onChange={(v) => setForm({ ...form, year: v })}
-            placeholder="Год"
+            placeholder={t.year}
           />
           <SelectField
-            label="Двигатель"
+            label={t.engine}
             options={engines}
             value={form.engine}
             onChange={(v) => setForm({ ...form, engine: v })}
-            placeholder="Двигатель"
+            placeholder={t.engine}
           />
         </div>
-        <Field label={`Цена, ${cur.symbol}`} placeholder="6 950 000" value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
-        <Field label="Пробег, км" placeholder="18 400" value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
+        <Field label={t.priceLabel(cur.symbol)} placeholder={t.pricePlaceholder} value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
+        <Field label={t.mileageLabel} placeholder={t.mileagePlaceholder} value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
         <div>
-          <Label className="text-sm font-medium mb-1.5 block">Описание</Label>
+          <Label className="text-sm font-medium mb-1.5 block">{t.description}</Label>
           <Textarea
-            placeholder="Состояние, комплектация, история..."
+            placeholder={t.descriptionPlaceholder}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="rounded-xl min-h-24"
@@ -885,7 +970,7 @@ const PublishForm = ({
         className="w-full gradient-brand text-white rounded-xl h-12 text-base font-semibold hover:opacity-90"
       >
         <Icon name="Rocket" size={20} className="mr-2" />
-        Опубликовать
+        {t.publish}
       </Button>
     </div>
   );
@@ -907,7 +992,7 @@ const CarList = ({ cars, action, empty, sold }: {
   sold?: boolean;
 }) => {
   const [activePhoto, setActivePhoto] = useState<Record<number, number>>({});
-  const { cur } = useSettings();
+  const { cur, t } = useSettings();
 
   if (cars.length === 0)
     return (
@@ -931,7 +1016,7 @@ const CarList = ({ cars, action, empty, sold }: {
               />
               {sold && (
                 <div className="absolute top-3 right-3 bg-foreground text-background text-xs font-bold uppercase px-3 py-1 rounded-full rotate-3">
-                  Продано
+                  {t.soldBadge}
                 </div>
               )}
               <div className="absolute bottom-3 left-3 gradient-brand text-white font-display text-lg font-bold px-3 py-1 rounded-xl">
@@ -965,7 +1050,7 @@ const CarList = ({ cars, action, empty, sold }: {
                 <h3 className="font-display text-xl font-bold uppercase leading-tight">{c.make} {c.model}</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <Tag icon="Calendar" text={c.year} />
-                  <Tag icon="Gauge" text={`${c.mileage} км`} />
+                  <Tag icon="Gauge" text={c.mileage ? t.mileageValue(c.mileage) : ''} />
                   <Tag icon="Cog" text={c.engine} />
                 </div>
               </div>
@@ -993,7 +1078,7 @@ const Broadcast = ({ count }: { count: number; cars: Car[] }) => {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-display text-2xl font-bold uppercase">Рассылка в Telegram</h2>
+      <h2 className="font-display text-2xl font-bold uppercase">{t.broadcastTitle}</h2>
 
       {groups.length === 0 ? (
         <div className="bg-secondary rounded-2xl p-5 flex flex-col items-center text-center gap-3">
@@ -1001,14 +1086,14 @@ const Broadcast = ({ count }: { count: number; cars: Car[] }) => {
             <Icon name="Send" size={28} />
           </div>
           <p className="text-sm text-secondary-foreground">
-            Сначала добавьте Telegram-группы в разделе «Настройки», чтобы запускать рассылку.
+            {t.broadcastNoGroups}
           </p>
         </div>
       ) : (
         <>
           <div className="bg-muted rounded-xl p-4 text-sm">
-            <p className="font-medium mb-1">К отправке готово:</p>
-            <p className="text-muted-foreground">{count} авто будут разосланы в {groups.length} групп(ы).</p>
+            <p className="font-medium mb-1">{t.readyToSend}</p>
+            <p className="text-muted-foreground">{t.broadcastSummary(count, groups.length)}</p>
           </div>
           <div className="space-y-2">
             {groups.map((g) => (

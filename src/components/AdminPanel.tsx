@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import func2url from '../../backend/func2url.json';
+import { useSettings } from '@/pages/Index';
 
 const ADMIN_URL = func2url.admin;
 
@@ -43,6 +44,7 @@ type Confirm =
   | { kind: 'unblock_user'; userId: number; login: string };
 
 const AdminPanel = () => {
+  const { t } = useSettings();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [cars, setCars] = useState<AdminCar[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ const AdminPanel = () => {
         setUsers(d.users || []);
         setCars(d.cars || []);
       })
-      .catch(() => setError('Не удалось загрузить данные'))
+      .catch(() => setError(t.loadError))
       .finally(() => setLoading(false));
   };
 
@@ -104,18 +106,18 @@ const AdminPanel = () => {
 
   return (
     <div className="space-y-5">
-      <h2 className="font-display text-2xl font-bold uppercase">Админ-панель</h2>
+      <h2 className="font-display text-2xl font-bold uppercase">{t.adminTitle}</h2>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-            <Icon name="Users" size={14} /> Пользователей
+            <Icon name="Users" size={14} /> {t.usersStat}
           </div>
           <div className="font-display text-3xl font-bold">{users.length}</div>
         </div>
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-            <Icon name="Car" size={14} /> Всего объявлений
+            <Icon name="Car" size={14} /> {t.adsStat}
           </div>
           <div className="font-display text-3xl font-bold">{cars.length}</div>
         </div>
@@ -141,17 +143,17 @@ const AdminPanel = () => {
                     {u.login}
                     {u.is_admin && (
                       <span className="text-[10px] bg-primary/15 text-primary rounded-full px-2 py-0.5 font-medium">
-                        админ
+                        {t.badgeAdmin}
                       </span>
                     )}
                     {u.is_blocked && (
                       <span className="text-[10px] bg-destructive/15 text-destructive rounded-full px-2 py-0.5 font-medium">
-                        заблокирован
+                        {t.badgeBlocked}
                       </span>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {Number(u.cars_count)} объявл. · {Number(u.selling_count)} в продаже · {Number(u.sold_count)} продано
+                    {t.userCounts(Number(u.cars_count), Number(u.selling_count), Number(u.sold_count))}
                   </div>
                 </div>
                 <Icon name={isOpen ? 'ChevronUp' : 'ChevronDown'} size={18} className="text-muted-foreground" />
@@ -173,12 +175,12 @@ const AdminPanel = () => {
                       }
                     >
                       <Icon name={u.is_blocked ? 'LockOpen' : 'Ban'} size={16} className="mr-2" />
-                      {u.is_blocked ? 'Разблокировать' : 'Заблокировать'}
+                      {u.is_blocked ? t.unblock : t.block}
                     </Button>
                   )}
 
                   {userCars.length === 0 ? (
-                    <div className="text-sm text-muted-foreground py-1">Нет объявлений</div>
+                    <div className="text-sm text-muted-foreground py-1">{t.noAds}</div>
                   ) : (
                     userCars.map((c) => (
                       <div key={c.id} className="flex items-center gap-3 bg-card rounded-xl p-2">
@@ -198,12 +200,12 @@ const AdminPanel = () => {
                         <span
                           className={`text-[10px] rounded-full px-2 py-0.5 font-medium ${c.status === 'sold' ? 'bg-accent/15 text-accent' : 'bg-primary/15 text-primary'}`}
                         >
-                          {c.status === 'sold' ? 'продано' : 'в продаже'}
+                          {c.status === 'sold' ? t.statusSold : t.statusSelling}
                         </span>
                         <button
                           onClick={() => setConfirm({ kind: 'delete_car', carId: c.id, title: `${c.make} ${c.model}` })}
                           className="text-destructive hover:bg-destructive/10 rounded-lg p-2 transition-colors"
-                          aria-label="Удалить"
+                          aria-label={t.deleteAria}
                         >
                           <Icon name="Trash2" size={16} />
                         </button>
@@ -221,24 +223,24 @@ const AdminPanel = () => {
         <AlertDialogContent className="rounded-2xl max-w-[340px]">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirm?.kind === 'delete_car' && 'Удалить объявление?'}
-              {confirm?.kind === 'block_user' && 'Заблокировать пользователя?'}
-              {confirm?.kind === 'unblock_user' && 'Разблокировать пользователя?'}
+              {confirm?.kind === 'delete_car' && t.confirmDeleteCar}
+              {confirm?.kind === 'block_user' && t.confirmBlockUser}
+              {confirm?.kind === 'unblock_user' && t.confirmUnblockUser}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirm?.kind === 'delete_car' && `«${confirm.title}» будет удалено без возможности восстановления.`}
-              {confirm?.kind === 'block_user' && `«${confirm.login}» потеряет доступ ко входу в приложение.`}
-              {confirm?.kind === 'unblock_user' && `«${confirm.login}» снова сможет входить в приложение.`}
+              {confirm?.kind === 'delete_car' && t.confirmDeleteCarDesc(confirm.title)}
+              {confirm?.kind === 'block_user' && t.confirmBlockUserDesc(confirm.login)}
+              {confirm?.kind === 'unblock_user' && t.confirmUnblockUserDesc(confirm.login)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Отмена</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">{t.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={runConfirm}
               disabled={busy}
               className={confirm?.kind === 'unblock_user' ? 'rounded-xl' : 'rounded-xl bg-destructive hover:bg-destructive/90'}
             >
-              {busy ? <Icon name="Loader2" size={16} className="animate-spin" /> : 'Подтвердить'}
+              {busy ? <Icon name="Loader2" size={16} className="animate-spin" /> : t.confirm}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
