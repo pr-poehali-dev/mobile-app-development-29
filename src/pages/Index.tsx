@@ -80,6 +80,7 @@ const T = {
     emptySold: 'Здесь появятся проданные авто.',
     markSold: 'Отметить проданным', restore: 'Вернуть в продажу',
     soldBadge: 'Продано',
+    makeCount: (n: number) => `${n} шт.`,
     mileageValue: (m: string) => `${m} км`,
     // publish form
     newAd: 'Новое объявление', photos: 'Фотографии', mainPhoto: 'Главное', addPhoto: 'Добавить',
@@ -139,6 +140,7 @@ const T = {
     emptySold: 'Sold cars will appear here.',
     markSold: 'Mark as sold', restore: 'Return to sale',
     soldBadge: 'Sold',
+    makeCount: (n: number) => `${n} pcs`,
     mileageValue: (m: string) => `${m} km`,
     // publish form
     newAd: 'New ad', photos: 'Photos', mainPhoto: 'Main', addPhoto: 'Add',
@@ -822,6 +824,7 @@ const Index = () => {
           {tab === 'selling' && !carsLoading && (
             <CarList
               cars={selling}
+              groupByMake
               empty={t.emptySelling}
               action={(c) => (
                 <div className="space-y-2">
@@ -1061,11 +1064,12 @@ const Field = ({ label, placeholder, value, onChange }: {
   </div>
 );
 
-const CarList = ({ cars, action, empty, sold }: {
+const CarList = ({ cars, action, empty, sold, groupByMake }: {
   cars: Car[];
   action: (c: Car) => React.ReactNode;
   empty: string;
   sold?: boolean;
+  groupByMake?: boolean;
 }) => {
   const [activePhoto, setActivePhoto] = useState<Record<number, number>>({});
   const { cur, t } = useSettings();
@@ -1078,62 +1082,84 @@ const CarList = ({ cars, action, empty, sold }: {
       </div>
     );
 
+  const renderCard = (c: Car) => {
+    const photoIdx = activePhoto[c.id] ?? 0;
+    return (
+      <div key={c.id} className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm animate-scale-in">
+        <div className="relative">
+          <img
+            src={c.photos[photoIdx]}
+            alt={c.title}
+            className={`w-full aspect-video object-cover transition-opacity ${sold ? 'grayscale' : ''}`}
+          />
+          {sold && (
+            <div className="absolute top-3 right-3 bg-foreground text-background text-xs font-bold uppercase px-3 py-1 rounded-full rotate-3">
+              {t.soldBadge}
+            </div>
+          )}
+          <div className="absolute bottom-3 left-3 gradient-brand text-white font-display text-lg font-bold px-3 py-1 rounded-xl">
+            {c.price} {cur.symbol}
+          </div>
+          {c.photos.length > 1 && (
+            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-lg">
+              <Icon name="Images" size={12} className="inline mr-1" />
+              {c.photos.length}
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnail strip */}
+        {c.photos.length > 1 && (
+          <div className="flex gap-1.5 px-3 pt-3 overflow-x-auto scrollbar-none">
+            {c.photos.map((src, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActivePhoto((p) => ({ ...p, [c.id]: idx }))}
+                className={`shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === photoIdx ? 'border-primary' : 'border-transparent opacity-60'}`}
+              >
+                <img src={src} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-display text-xl font-bold uppercase leading-tight">{c.make} {c.model}</h3>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Tag icon="Calendar" text={c.year} />
+              <Tag icon="Gauge" text={c.mileage ? t.mileageValue(c.mileage) : ''} />
+              <Tag icon="Cog" text={c.engine} />
+              <Tag icon="Fingerprint" text={c.vin ? `VIN ${c.vin}` : ''} />
+            </div>
+          </div>
+          {c.description && <p className="text-sm text-muted-foreground">{c.description}</p>}
+          {action(c)}
+        </div>
+      </div>
+    );
+  };
+
+  if (!groupByMake) {
+    return <div className="space-y-4">{cars.map(renderCard)}</div>;
+  }
+
+  const makes = Array.from(new Set(cars.map((c) => c.make))).sort((a, b) => a.localeCompare(b));
+
   return (
-    <div className="space-y-4">
-      {cars.map((c) => {
-        const photoIdx = activePhoto[c.id] ?? 0;
+    <div className="space-y-6">
+      {makes.map((make) => {
+        const group = cars.filter((c) => c.make === make);
         return (
-          <div key={c.id} className="bg-card rounded-2xl overflow-hidden border border-border shadow-sm animate-scale-in">
-            <div className="relative">
-              <img
-                src={c.photos[photoIdx]}
-                alt={c.title}
-                className={`w-full aspect-video object-cover transition-opacity ${sold ? 'grayscale' : ''}`}
-              />
-              {sold && (
-                <div className="absolute top-3 right-3 bg-foreground text-background text-xs font-bold uppercase px-3 py-1 rounded-full rotate-3">
-                  {t.soldBadge}
-                </div>
-              )}
-              <div className="absolute bottom-3 left-3 gradient-brand text-white font-display text-lg font-bold px-3 py-1 rounded-xl">
-                {c.price} {cur.symbol}
-              </div>
-              {c.photos.length > 1 && (
-                <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-lg">
-                  <Icon name="Images" size={12} className="inline mr-1" />
-                  {c.photos.length}
-                </div>
-              )}
+          <div key={make} className="space-y-3">
+            <div className="flex items-center gap-2 sticky top-0 z-[1]">
+              <h3 className="font-display text-lg font-bold uppercase tracking-wide">{make}</h3>
+              <span className="text-xs font-medium bg-primary/10 text-primary rounded-full px-2.5 py-0.5">
+                {t.makeCount(group.length)}
+              </span>
+              <div className="flex-1 h-px bg-border" />
             </div>
-
-            {/* Thumbnail strip */}
-            {c.photos.length > 1 && (
-              <div className="flex gap-1.5 px-3 pt-3 overflow-x-auto scrollbar-none">
-                {c.photos.map((src, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActivePhoto((p) => ({ ...p, [c.id]: idx }))}
-                    className={`shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === photoIdx ? 'border-primary' : 'border-transparent opacity-60'}`}
-                  >
-                    <img src={src} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="p-4 space-y-3">
-              <div>
-                <h3 className="font-display text-xl font-bold uppercase leading-tight">{c.make} {c.model}</h3>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Tag icon="Calendar" text={c.year} />
-                  <Tag icon="Gauge" text={c.mileage ? t.mileageValue(c.mileage) : ''} />
-                  <Tag icon="Cog" text={c.engine} />
-                  <Tag icon="Fingerprint" text={c.vin ? `VIN ${c.vin}` : ''} />
-                </div>
-              </div>
-              {c.description && <p className="text-sm text-muted-foreground">{c.description}</p>}
-              {action(c)}
-            </div>
+            <div className="space-y-4">{group.map(renderCard)}</div>
           </div>
         );
       })}
