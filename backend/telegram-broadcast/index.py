@@ -124,23 +124,47 @@ def _send(body: dict, user_id: int, bot_token: str, conn) -> dict:
         for m in messages:
             text = m.get('text', '')
             car_id = m.get('carId')
-            photo = (m.get('photos') or [None])[0]
-            is_photo = bool(photo and str(photo).startswith('http'))
-            if is_photo:
-                res = _tg_call(bot_token, 'sendPhoto', {
-                    'chat_id': chat_id, 'photo': photo, 'caption': text[:1024],
+            all_photos = [p for p in (m.get('photos') or []) if p and str(p).startswith('http')]
+            caption = text[:1024]
+
+            caption_msg_id = None  # сообщение с подписью (его редактируем при «ПРОДАНО»)
+            is_photo = False
+
+            if len(all_photos) >= 2:
+                # Несколько фото — отправляем альбомом, подпись на первом фото
+                media = []
+                for idx, p in enumerate(all_photos[:10]):
+                    item = {'type': 'photo', 'media': p}
+                    if idx == 0:
+                        item['caption'] = caption
+                    media.append(item)
+                res = _tg_call(bot_token, 'sendMediaGroup', {
+                    'chat_id': chat_id, 'media': json.dumps(media),
                 })
+                if res.get('ok'):
+                    is_photo = True
+                    result_arr = res.get('result', [])
+                    if result_arr:
+                        caption_msg_id = result_arr[0].get('message_id')
+            elif len(all_photos) == 1:
+                res = _tg_call(bot_token, 'sendPhoto', {
+                    'chat_id': chat_id, 'photo': all_photos[0], 'caption': caption,
+                })
+                if res.get('ok'):
+                    is_photo = True
+                    caption_msg_id = res.get('result', {}).get('message_id')
             else:
                 res = _tg_call(bot_token, 'sendMessage', {'chat_id': chat_id, 'text': text})
+                if res.get('ok'):
+                    caption_msg_id = res.get('result', {}).get('message_id')
 
             if res.get('ok'):
                 sent += 1
-                msg_id = res.get('result', {}).get('message_id')
-                if car_id and msg_id:
+                if car_id and caption_msg_id:
                     cur.execute(
                         """INSERT INTO sent_messages (car_id, user_id, chat_id, message_id, is_photo, base_text)
                            VALUES (%s, %s, %s, %s, %s, %s)""",
-                        (car_id, user_id, chat_id, msg_id, is_photo, text[:1024]),
+                        (car_id, user_id, chat_id, caption_msg_id, is_photo, caption),
                     )
             else:
                 last_error = res.get('description', 'Ошибка отправки')
