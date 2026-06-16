@@ -85,6 +85,7 @@ const T = {
     buyerPlaceholder: 'Имя, телефон или заметка',
     buyerConfirm: 'Подтвердить продажу', buyerSkip: 'Без покупателя',
     buyerTag: (name: string) => `Покупатель: ${name}`,
+    searchSold: 'Поиск по покупателю или авто', nothingFound: 'Ничего не найдено',
     mileageValue: (m: string) => `${m} км`,
     // publish form
     newAd: 'Новое объявление', photos: 'Фотографии', mainPhoto: 'Главное', addPhoto: 'Добавить',
@@ -149,6 +150,7 @@ const T = {
     buyerPlaceholder: 'Name, phone or note',
     buyerConfirm: 'Confirm sale', buyerSkip: 'No buyer',
     buyerTag: (name: string) => `Buyer: ${name}`,
+    searchSold: 'Search by buyer or car', nothingFound: 'Nothing found',
     mileageValue: (m: string) => `${m} km`,
     // publish form
     newAd: 'New ad', photos: 'Photos', mainPhoto: 'Main', addPhoto: 'Add',
@@ -686,6 +688,7 @@ const Index = () => {
   const [tab, setTab] = useState<Tab>('publish');
   const [cars, setCars] = useState<Car[]>([]);
   const [carsLoading, setCarsLoading] = useState(false);
+  const [soldSearch, setSoldSearch] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [photos, setPhotos] = useState<string[]>([]);
 
@@ -728,6 +731,12 @@ const Index = () => {
 
   const selling = cars.filter((c) => c.status === 'selling');
   const sold = cars.filter((c) => c.status === 'sold');
+  const soldQuery = soldSearch.trim().toLowerCase();
+  const soldFiltered = soldQuery
+    ? sold.filter((c) =>
+        [c.buyer, c.make, c.model, c.vin].some((f) => (f || '').toLowerCase().includes(soldQuery)),
+      )
+    : sold;
 
   const handlePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -845,17 +854,42 @@ const Index = () => {
             />
           )}
           {tab === 'sold' && !carsLoading && (
-            <CarList
-              cars={sold}
-              sold
-              empty={t.emptySold}
-              action={(c) => (
-                <Button variant="outline" onClick={() => restore(c.id)} className="w-full rounded-xl">
-                  <Icon name="Undo2" size={18} className="mr-2" />
-                  {t.restore}
-                </Button>
+            <div className="space-y-4">
+              {sold.length > 0 && (
+                <div className="relative">
+                  <Icon
+                    name="Search"
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    value={soldSearch}
+                    onChange={(e) => setSoldSearch(e.target.value)}
+                    placeholder={t.searchSold}
+                    className="rounded-xl h-11 pl-10"
+                  />
+                  {soldSearch && (
+                    <button
+                      onClick={() => setSoldSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <Icon name="X" size={18} />
+                    </button>
+                  )}
+                </div>
               )}
-            />
+              <CarList
+                cars={soldFiltered}
+                sold
+                empty={soldQuery ? t.nothingFound : t.emptySold}
+                action={(c) => (
+                  <Button variant="outline" onClick={() => restore(c.id)} className="w-full rounded-xl">
+                    <Icon name="Undo2" size={18} className="mr-2" />
+                    {t.restore}
+                  </Button>
+                )}
+              />
+            </div>
           )}
           {tab === 'broadcast' && <Broadcast count={selling.length} cars={selling} />}
           {tab === 'settings' && <SettingsPanel />}
