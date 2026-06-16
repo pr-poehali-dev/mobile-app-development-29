@@ -8,6 +8,7 @@ import AuthScreen from '@/components/AuthScreen';
 import func2url from '../../backend/func2url.json';
 
 const AUTH_URL = func2url.auth;
+const CARS_URL = func2url.cars;
 
 const MAX_PHOTOS = 15;
 
@@ -92,33 +93,6 @@ interface Car {
 }
 
 const PLACEHOLDER = 'https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7551188f-b758-4ec5-99b4-c23efe804a13.jpg';
-
-const initialCars: Car[] = [
-  {
-    id: 1,
-    make: 'BMW',
-    model: 'M4',
-    price: '6 950 000',
-    year: '2022',
-    mileage: '18 400',
-    engine: '3.0 / 510 л.с.',
-    description: 'Идеальное состояние, один владелец, полный пакет M Performance.',
-    photos: [PLACEHOLDER],
-    status: 'selling',
-  },
-  {
-    id: 2,
-    make: 'Audi',
-    model: 'RS6',
-    price: '9 200 000',
-    year: '2021',
-    mileage: '32 100',
-    engine: '4.0 / 600 л.с.',
-    description: 'Семейный универсал мечты. Керамика, пневмоподвеска, карбон.',
-    photos: [PLACEHOLDER],
-    status: 'sold',
-  },
-];
 
 const buildTabs = (t: (typeof T)['ru']): { id: Tab; label: string; icon: string }[] => [
   { id: 'publish', label: t.publish, icon: 'PlusCircle' },
@@ -538,9 +512,26 @@ const Index = () => {
   };
 
   const [tab, setTab] = useState<Tab>('publish');
-  const [cars, setCars] = useState<Car[]>(initialCars);
+  const [cars, setCars] = useState<Car[]>([]);
+  const [carsLoading, setCarsLoading] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  const carsAuth = () => ({ 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' });
+
+  const loadCars = () => {
+    setCarsLoading(true);
+    fetch(CARS_URL, { headers: carsAuth() })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => setCars(d.cars || []))
+      .catch(() => {})
+      .finally(() => setCarsLoading(false));
+  };
+
+  useEffect(() => {
+    if (token) loadCars();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
   const [settings, setSettingsState] = useState<Settings>(() => {
     try {
       const saved = localStorage.getItem('autosell_settings');
@@ -577,22 +568,24 @@ const Index = () => {
   const removePhoto = (idx: number) =>
     setPhotos((prev) => prev.filter((_, i) => i !== idx));
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!form.make) return;
-    setCars((prev) => [
-      { id: Date.now(), ...form, photos: photos.length ? photos : [PLACEHOLDER], status: 'selling' },
-      ...prev,
-    ]);
+    const payload = { ...form, photos: photos.length ? photos : [PLACEHOLDER], status: 'selling' };
+    await fetch(CARS_URL, { method: 'POST', headers: carsAuth(), body: JSON.stringify(payload) }).catch(() => {});
     setForm(emptyForm);
     setPhotos([]);
     setTab('selling');
+    loadCars();
   };
 
-  const markSold = (id: number) =>
-    setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'sold' } : c)));
+  const changeStatus = async (id: number, status: 'selling' | 'sold') => {
+    setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+    await fetch(CARS_URL, { method: 'PUT', headers: carsAuth(), body: JSON.stringify({ id, status }) }).catch(() => {});
+  };
 
-  const restore = (id: number) =>
-    setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'selling' } : c)));
+  const markSold = (id: number) => changeStatus(id, 'sold');
+
+  const restore = (id: number) => changeStatus(id, 'selling');
 
   if (!authChecked) {
     return (
@@ -655,7 +648,12 @@ const Index = () => {
               onPublish={handlePublish}
             />
           )}
-          {tab === 'selling' && (
+          {(tab === 'selling' || tab === 'sold') && carsLoading && (
+            <div className="flex justify-center py-16">
+              <Icon name="Loader2" size={32} className="animate-spin text-primary" />
+            </div>
+          )}
+          {tab === 'selling' && !carsLoading && (
             <CarList
               cars={selling}
               empty="Пока нет авто в продаже. Опубликуйте первое!"
@@ -670,7 +668,7 @@ const Index = () => {
               )}
             />
           )}
-          {tab === 'sold' && (
+          {tab === 'sold' && !carsLoading && (
             <CarList
               cars={sold}
               sold
