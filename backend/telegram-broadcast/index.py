@@ -1,0 +1,135 @@
+import json
+import os
+import urllib.request
+import urllib.parse
+
+import psycopg2
+
+CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+    'Access-Control-Max-Age': '86400',
+}
+
+
+def _resp(status: int, body) -> dict:
+    return {
+        'statusCode': status,
+        'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+        'isBase64Encoded': False,
+        'body': json.dumps(body),
+    }
+
+
+def _get_user_id(event: dict, conn):
+    headers = event.get('headers') or {}
+    token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+    if not token:
+        return None
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_id FROM sessions WHERE token = %s AND expires_at > NOW()",
+        (token,),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
+
+
+def _tg_call(bot_token: str, method: str, payload: dict) -> dict:
+    url = f"https://api.telegram.org/bot{bot_token}/{method}"
+    data = urllib.parse.urlencode(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=data, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read().decode('utf-8'))
+        except Exception:
+            return {'ok': False, 'description': f'HTTP {e.code}'}
+    except Exception as e:
+        return {'ok': False, 'description': str(e)}
+
+
+def _normalize_chat(link: str) -> str:
+    link = (link or '').strip()
+    if not link:
+        return ''
+    if link.startswith('https://t.me/'):
+        link = link[len('https://t.me/'):]
+    elif link.startswith('t.me/'):
+        link = link[len('t.me/'):]
+    if link.startswith('@'):
+        return link
+    if link.lstrip('-').isdigit():
+        return link
+    return '@' + link
+
+
+def handler(event: dict, context) -> dict:
+    '''Безопасная рассылка объявлений в Telegram-группы. Токен бота берётся из секрета на сервере. Доступ только по токену владельца.'''
+    method = event.get('httpMethod', 'POST')
+    if method == 'OPTIONS':
+        return {'statusCode': 200, 'headers': CORS_HEADERS, 'isBase64Encoded': False, 'body': ''}
+    if method != 'POST':
+        return _resp(405, {'error': 'Метод не поддерживается'})
+
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    conn.autocommit = True
+    try:
+        user_id = _get_user_id(event, conn)
+        if not user_id:
+            return _resp(401, {'error': 'Не авторизован'})
+
+        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        if not bot_token:
+            return _resp(500, {'error': 'Не задан токен Telegram-бота. Добавьте секрет TELEGRAM_BOT_TOKEN.'})
+
+        body = json.loads(event.get('body') or '{}')
+        groups = body.get('groups') or []
+        messages = body.get('messages') or []
+
+        if not groups:
+            return _resp(400, {'error': 'Нет групп для рассылки'})
+        if not messages:
+            return _resp(400, {'error': 'Нет объявлений для отправки'})
+
+        results = []
+        for g in groups:
+            chat_id = _normalize_chat(g.get('link', ''))
+            group_name = g.get('name', chat_id)
+            if not chat_id:
+                results.append({'group': group_name, 'ok': False, 'error': 'Пустая ссылка'})
+                continue
+
+            sent = 0
+            last_error = ''
+            for m in messages:
+                text = m.get('text', '')
+                photo = (m.get('photos') or [None])[0]
+                if photo and str(photo).startswith('http'):
+                    res = _tg_call(bot_token, 'sendPhoto', {
+                        'chat_id': chat_id, 'photo': photo, 'caption': text[:1024],
+                    })
+                else:
+                    res = _tg_call(bot_token, 'sendMessage', {
+                        'chat_id': chat_id, 'text': text,
+                    })
+                if res.get('ok'):
+                    sent += 1
+                else:
+                    last_error = res.get('description', 'Ошибка отправки')
+
+            results.append({
+                'group': group_name,
+                'ok': sent > 0,
+                'sent': sent,
+                'total': len(messages),
+                'error': last_error if sent == 0 else '',
+            })
+
+        any_ok = any(r['ok'] for r in results)
+        return _resp(200 if any_ok else 502, {'results': results})
+    finally:
+        conn.close()

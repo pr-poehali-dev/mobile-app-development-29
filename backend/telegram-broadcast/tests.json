@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Without token returns 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"groups": [{"name": "g", "link": "@test"}], "messages": [{"text": "hi"}]},
+      "expectedStatus": 401
+    }
+  ]
+}

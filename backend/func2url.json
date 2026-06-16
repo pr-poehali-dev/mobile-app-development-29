@@ -1,4 +1,5 @@
 {
+  "telegram-broadcast": "https://functions.poehali.dev/ccff0bda-94f4-43f0-9d53-8fdb3ed0d93b",
   "admin": "https://functions.poehali.dev/ed08cab0-2786-4f99-a29a-0a00b90ce1da",
   "cars": "https://functions.poehali.dev/ed15b611-e3fd-4588-b689-3e1f6d41b59f",
   "auth": "https://functions.poehali.dev/dc18db12-9b93-4d2a-802c-d432b3da69c4"

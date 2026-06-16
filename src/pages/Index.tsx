@@ -6,10 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AuthScreen from '@/components/AuthScreen';
 import AdminPanel from '@/components/AdminPanel';
+import { toast } from 'sonner';
 import func2url from '../../backend/func2url.json';
 
 const AUTH_URL = func2url.auth;
 const CARS_URL = func2url.cars;
+const BROADCAST_URL = func2url['telegram-broadcast'];
 
 const MAX_PHOTOS = 15;
 
@@ -87,6 +89,10 @@ const T = {
     broadcastNoGroups: 'Сначала добавьте Telegram-группы в разделе «Настройки», чтобы запускать рассылку.',
     readyToSend: 'К отправке готово:',
     broadcastSummary: (count: number, groups: number) => `${count} авто будут разосланы в ${groups} групп(ы).`,
+    sending: 'Отправляем...', broadcastDone: 'Рассылка завершена',
+    broadcastNoCars: 'Нет авто в продаже для рассылки.',
+    sentToGroup: (name: string, sent: number, total: number) => `${name}: отправлено ${sent} из ${total}`,
+    broadcastFailed: 'Не удалось отправить. Проверьте, что бот добавлен в группы как админ.',
     // admin panel
     adminTitle: 'Админ-панель', usersStat: 'Пользователей', adsStat: 'Всего объявлений',
     badgeAdmin: 'админ', badgeBlocked: 'заблокирован',
@@ -137,6 +143,10 @@ const T = {
     broadcastNoGroups: 'First add Telegram groups in the «Settings» section to start broadcasting.',
     readyToSend: 'Ready to send:',
     broadcastSummary: (count: number, groups: number) => `${count} car(s) will be sent to ${groups} group(s).`,
+    sending: 'Sending...', broadcastDone: 'Broadcast complete',
+    broadcastNoCars: 'No cars for sale to broadcast.',
+    sentToGroup: (name: string, sent: number, total: number) => `${name}: sent ${sent} of ${total}`,
+    broadcastFailed: 'Failed to send. Make sure the bot is added to groups as admin.',
     // admin panel
     adminTitle: 'Admin panel', usersStat: 'Users', adsStat: 'Total ads',
     badgeAdmin: 'admin', badgeBlocked: 'blocked',
@@ -1072,9 +1082,51 @@ const Tag = ({ icon, text }: { icon: string; text: string }) =>
     </span>
   ) : null;
 
-const Broadcast = ({ count }: { count: number; cars: Car[] }) => {
-  const { settings, t } = useSettings();
+const Broadcast = ({ count, cars }: { count: number; cars: Car[] }) => {
+  const { settings, t, cur } = useSettings();
   const groups = settings.groups;
+  const [sending, setSending] = useState(false);
+
+  const buildText = (c: Car) =>
+    settings.broadcastText
+      .replace(/{make}/g, c.make)
+      .replace(/{model}/g, c.model)
+      .replace(/{year}/g, c.year)
+      .replace(/{price}/g, `${c.price} ${cur.symbol}`)
+      .replace(/{mileage}/g, c.mileage)
+      .replace(/{engine}/g, c.engine)
+      .replace(/{description}/g, c.description);
+
+  const send = async () => {
+    if (cars.length === 0) {
+      toast.error(t.broadcastNoCars);
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch(BROADCAST_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
+        body: JSON.stringify({
+          groups: groups.map((g) => ({ name: g.name, link: g.link })),
+          messages: cars.map((c) => ({ text: buildText(c), photos: c.photos })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.results) {
+        toast.error(data.error || t.broadcastFailed);
+        return;
+      }
+      const lines = (data.results as { group: string; sent: number; total: number }[]).map((r) =>
+        t.sentToGroup(r.group, r.sent, r.total),
+      );
+      toast.success(t.broadcastDone, { description: lines.join('\n') });
+    } catch {
+      toast.error(t.broadcastFailed);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -1108,9 +1160,13 @@ const Broadcast = ({ count }: { count: number; cars: Car[] }) => {
               </div>
             ))}
           </div>
-          <Button className="w-full gradient-brand text-white rounded-xl h-12 text-base font-semibold hover:opacity-90">
-            <Icon name="Send" size={20} className="mr-2" />
-            {t.broadcast}
+          <Button
+            onClick={send}
+            disabled={sending}
+            className="w-full gradient-brand text-white rounded-xl h-12 text-base font-semibold hover:opacity-90"
+          >
+            <Icon name={sending ? 'Loader2' : 'Send'} size={20} className={`mr-2 ${sending ? 'animate-spin' : ''}`} />
+            {sending ? t.sending : t.broadcast}
           </Button>
         </>
       )}
