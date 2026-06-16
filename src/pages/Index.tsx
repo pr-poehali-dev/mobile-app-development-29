@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, createContext, useContext } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,72 @@ import { Label } from '@/components/ui/label';
 
 const MAX_PHOTOS = 15;
 
-type Tab = 'publish' | 'selling' | 'sold' | 'broadcast';
+type Tab = 'publish' | 'selling' | 'sold' | 'broadcast' | 'settings';
+
+type Lang = 'ru' | 'en';
+
+interface Currency {
+  code: string;
+  symbol: string;
+  label: string;
+}
+
+const CURRENCIES: Currency[] = [
+  { code: 'RUB', symbol: '₽', label: 'Рубль' },
+  { code: 'USD', symbol: '$', label: 'Доллар' },
+  { code: 'EUR', symbol: '€', label: 'Евро' },
+  { code: 'KZT', symbol: '₸', label: 'Тенге' },
+  { code: 'AED', symbol: 'AED', label: 'Дирхам ОАЭ' },
+  { code: 'BYN', symbol: 'Br', label: 'Бел. рубль' },
+];
+
+interface TgGroup {
+  id: number;
+  name: string;
+  link: string;
+}
+
+interface Settings {
+  lang: Lang;
+  currency: string;
+  groups: TgGroup[];
+  broadcastText: string;
+}
+
+const defaultSettings: Settings = {
+  lang: 'ru',
+  currency: 'RUB',
+  groups: [],
+  broadcastText: '🚗 {make} {model}, {year}\n💰 {price}\n📍 Пробег: {mileage} км\n⚙️ {engine}',
+};
+
+const T = {
+  ru: {
+    publish: 'Опубликовать', selling: 'В продаже', sold: 'Продано', broadcast: 'Рассылка', settings: 'Настройки',
+    settingsTitle: 'Настройки', langSection: 'Язык приложения', currencySection: 'Валюта в объявлениях',
+    groupsSection: 'Telegram-группы для рассылки', addGroup: 'Добавить группу', groupName: 'Название группы',
+    groupLink: 'Ссылка или @username', noGroups: 'Пока нет групп. Добавьте первую для рассылки.',
+    broadcastTemplate: 'Шаблон объявления', save: 'Сохранить', delete: 'Удалить',
+    create: 'Создать группу', cancel: 'Отмена',
+  },
+  en: {
+    publish: 'Publish', selling: 'For sale', sold: 'Sold', broadcast: 'Broadcast', settings: 'Settings',
+    settingsTitle: 'Settings', langSection: 'App language', currencySection: 'Currency in ads',
+    groupsSection: 'Telegram groups for broadcast', addGroup: 'Add group', groupName: 'Group name',
+    groupLink: 'Link or @username', noGroups: 'No groups yet. Add the first one for broadcast.',
+    broadcastTemplate: 'Ad template', save: 'Save', delete: 'Delete',
+    create: 'Create group', cancel: 'Cancel',
+  },
+};
+
+const SettingsContext = createContext<{
+  settings: Settings;
+  setSettings: (s: Settings) => void;
+  t: (typeof T)['ru'];
+  cur: Currency;
+}>({ settings: defaultSettings, setSettings: () => {}, t: T.ru, cur: CURRENCIES[0] });
+
+const useSettings = () => useContext(SettingsContext);
 
 interface Car {
   id: number;
@@ -51,11 +116,12 @@ const initialCars: Car[] = [
   },
 ];
 
-const tabs: { id: Tab; label: string; icon: string }[] = [
-  { id: 'publish', label: 'Опубликовать', icon: 'PlusCircle' },
-  { id: 'selling', label: 'В продаже', icon: 'Car' },
-  { id: 'sold', label: 'Продано', icon: 'CheckCircle2' },
-  { id: 'broadcast', label: 'Рассылка', icon: 'Send' },
+const buildTabs = (t: (typeof T)['ru']): { id: Tab; label: string; icon: string }[] => [
+  { id: 'publish', label: t.publish, icon: 'PlusCircle' },
+  { id: 'selling', label: t.selling, icon: 'Car' },
+  { id: 'sold', label: t.sold, icon: 'CheckCircle2' },
+  { id: 'broadcast', label: t.broadcast, icon: 'Send' },
+  { id: 'settings', label: t.settings, icon: 'Settings' },
 ];
 
 interface ModelSpec {
@@ -429,6 +495,27 @@ const Index = () => {
   const [cars, setCars] = useState<Car[]>(initialCars);
   const [form, setForm] = useState(emptyForm);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [settings, setSettingsState] = useState<Settings>(() => {
+    try {
+      const saved = localStorage.getItem('autosell_settings');
+      return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    } catch {
+      return defaultSettings;
+    }
+  });
+
+  const setSettings = (s: Settings) => {
+    setSettingsState(s);
+    try {
+      localStorage.setItem('autosell_settings', JSON.stringify(s));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const t = T[settings.lang];
+  const cur = CURRENCIES.find((c) => c.code === settings.currency) || CURRENCIES[0];
+  const tabs = buildTabs(t);
 
   const selling = cars.filter((c) => c.status === 'selling');
   const sold = cars.filter((c) => c.status === 'sold');
@@ -462,6 +549,7 @@ const Index = () => {
     setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status: 'selling' } : c)));
 
   return (
+    <SettingsContext.Provider value={{ settings, setSettings, t, cur }}>
     <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-md bg-background min-h-screen relative pb-24 shadow-2xl">
         <header className="gradient-brand px-5 pt-12 pb-8 rounded-b-[2.5rem] text-white relative overflow-hidden">
@@ -526,28 +614,30 @@ const Index = () => {
               )}
             />
           )}
-          {tab === 'broadcast' && <Broadcast count={selling.length} />}
+          {tab === 'broadcast' && <Broadcast count={selling.length} cars={selling} />}
+          {tab === 'settings' && <SettingsPanel />}
         </main>
 
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card/95 backdrop-blur border-t border-border px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex justify-around z-10">
-          {tabs.map((t) => {
-            const active = tab === t.id;
+          {tabs.map((item) => {
+            const active = tab === item.id;
             return (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all ${active ? 'text-primary' : 'text-muted-foreground'}`}
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-all ${active ? 'text-primary' : 'text-muted-foreground'}`}
               >
                 <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-primary/10' : ''}`}>
-                  <Icon name={t.icon} size={22} />
+                  <Icon name={item.icon} size={22} />
                 </div>
-                <span className="text-[10px] font-medium">{t.label}</span>
+                <span className="text-[10px] font-medium">{item.label}</span>
               </button>
             );
           })}
         </nav>
       </div>
     </div>
+    </SettingsContext.Provider>
   );
 };
 
@@ -611,6 +701,7 @@ const PublishForm = ({
   const models = form.make ? (MODELS[form.make] || []) : [];
   const years = getYears(form.make, form.model);
   const engines = getEngines(form.make, form.model);
+  const { cur } = useSettings();
 
   return (
     <div className="space-y-5">
@@ -698,7 +789,7 @@ const PublishForm = ({
             placeholder="Двигатель"
           />
         </div>
-        <Field label="Цена, ₽" placeholder="6 950 000" value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
+        <Field label={`Цена, ${cur.symbol}`} placeholder="6 950 000" value={form.price} onChange={(v) => setForm({ ...form, price: v })} />
         <Field label="Пробег, км" placeholder="18 400" value={form.mileage} onChange={(v) => setForm({ ...form, mileage: v })} />
         <div>
           <Label className="text-sm font-medium mb-1.5 block">Описание</Label>
@@ -738,6 +829,7 @@ const CarList = ({ cars, action, empty, sold }: {
   sold?: boolean;
 }) => {
   const [activePhoto, setActivePhoto] = useState<Record<number, number>>({});
+  const { cur } = useSettings();
 
   if (cars.length === 0)
     return (
@@ -765,7 +857,7 @@ const CarList = ({ cars, action, empty, sold }: {
                 </div>
               )}
               <div className="absolute bottom-3 left-3 gradient-brand text-white font-display text-lg font-bold px-3 py-1 rounded-xl">
-                {c.price} ₽
+                {c.price} {cur.symbol}
               </div>
               {c.photos.length > 1 && (
                 <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-lg">
@@ -817,35 +909,170 @@ const Tag = ({ icon, text }: { icon: string; text: string }) =>
     </span>
   ) : null;
 
-const Broadcast = ({ count }: { count: number }) => (
-  <div className="space-y-4">
-    <h2 className="font-display text-2xl font-bold uppercase">Рассылка в Telegram</h2>
-    <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#229ED9] flex items-center justify-center text-white">
-          <Icon name="Send" size={24} />
+const Broadcast = ({ count }: { count: number; cars: Car[] }) => {
+  const { settings, t } = useSettings();
+  const groups = settings.groups;
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-display text-2xl font-bold uppercase">Рассылка в Telegram</h2>
+
+      {groups.length === 0 ? (
+        <div className="bg-secondary rounded-2xl p-5 flex flex-col items-center text-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-[#229ED9] flex items-center justify-center text-white">
+            <Icon name="Send" size={28} />
+          </div>
+          <p className="text-sm text-secondary-foreground">
+            Сначала добавьте Telegram-группы в разделе «Настройки», чтобы запускать рассылку.
+          </p>
         </div>
-        <div>
-          <div className="font-semibold">Telegram-канал</div>
-          <div className="text-sm text-muted-foreground">Не подключён</div>
+      ) : (
+        <>
+          <div className="bg-muted rounded-xl p-4 text-sm">
+            <p className="font-medium mb-1">К отправке готово:</p>
+            <p className="text-muted-foreground">{count} авто будут разосланы в {groups.length} групп(ы).</p>
+          </div>
+          <div className="space-y-2">
+            {groups.map((g) => (
+              <div key={g.id} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+                <div className="w-10 h-10 rounded-xl bg-[#229ED9] flex items-center justify-center text-white shrink-0">
+                  <Icon name="Send" size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{g.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">{g.link}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Button className="w-full gradient-brand text-white rounded-xl h-12 text-base font-semibold hover:opacity-90">
+            <Icon name="Send" size={20} className="mr-2" />
+            {t.broadcast}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
+
+const SettingsPanel = () => {
+  const { settings, setSettings, t } = useSettings();
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [link, setLink] = useState('');
+
+  const update = (patch: Partial<Settings>) => setSettings({ ...settings, ...patch });
+
+  const addGroup = () => {
+    if (!name.trim() || !link.trim()) return;
+    update({ groups: [...settings.groups, { id: Date.now(), name: name.trim(), link: link.trim() }] });
+    setName('');
+    setLink('');
+    setAdding(false);
+  };
+
+  const removeGroup = (id: number) =>
+    update({ groups: settings.groups.filter((g) => g.id !== id) });
+
+  return (
+    <div className="space-y-6">
+      <h2 className="font-display text-2xl font-bold uppercase">{t.settingsTitle}</h2>
+
+      {/* Язык */}
+      <section className="space-y-2">
+        <Label className="text-sm font-semibold">{t.langSection}</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {([['ru', 'Русский', '🇷🇺'], ['en', 'English', '🇬🇧']] as const).map(([code, label, flag]) => (
+            <button
+              key={code}
+              onClick={() => update({ lang: code })}
+              className={`flex items-center justify-center gap-2 h-11 rounded-xl border text-sm font-medium transition-all ${settings.lang === code ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground'}`}
+            >
+              <span>{flag}</span>{label}
+            </button>
+          ))}
         </div>
-      </div>
-      <div className="bg-muted rounded-xl p-4 text-sm">
-        <p className="font-medium mb-1">К отправке готово:</p>
-        <p className="text-muted-foreground">{count} авто в продаже будут разосланы подписчикам канала.</p>
-      </div>
-      <Button className="w-full gradient-brand text-white rounded-xl h-12 text-base font-semibold hover:opacity-90">
-        <Icon name="Send" size={20} className="mr-2" />
-        Отправить рассылку
-      </Button>
+      </section>
+
+      {/* Валюта */}
+      <section className="space-y-2">
+        <Label className="text-sm font-semibold">{t.currencySection}</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {CURRENCIES.map((c) => (
+            <button
+              key={c.code}
+              onClick={() => update({ currency: c.code })}
+              className={`flex flex-col items-center justify-center h-16 rounded-xl border transition-all ${settings.currency === c.code ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground'}`}
+            >
+              <span className="font-display text-lg font-bold">{c.symbol}</span>
+              <span className="text-[10px] text-muted-foreground">{c.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Telegram-группы */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold">{t.groupsSection}</Label>
+          {!adding && (
+            <button onClick={() => setAdding(true)} className="text-primary text-sm font-medium flex items-center gap-1">
+              <Icon name="Plus" size={16} />{t.addGroup}
+            </button>
+          )}
+        </div>
+
+        {settings.groups.length === 0 && !adding && (
+          <p className="text-sm text-muted-foreground bg-muted rounded-xl p-4">{t.noGroups}</p>
+        )}
+
+        <div className="space-y-2">
+          {settings.groups.map((g) => (
+            <div key={g.id} className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+              <div className="w-10 h-10 rounded-xl bg-[#229ED9] flex items-center justify-center text-white shrink-0">
+                <Icon name="Send" size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-medium truncate">{g.name}</div>
+                <div className="text-xs text-muted-foreground truncate">{g.link}</div>
+              </div>
+              <button onClick={() => removeGroup(g.id)} className="text-muted-foreground hover:text-destructive p-1">
+                <Icon name="Trash2" size={18} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {adding && (
+          <div className="bg-card border border-border rounded-2xl p-4 space-y-3 animate-scale-in">
+            <Input placeholder={t.groupName} value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl" />
+            <Input placeholder={t.groupLink} value={link} onChange={(e) => setLink(e.target.value)} className="rounded-xl" />
+            <div className="flex gap-2">
+              <Button onClick={addGroup} className="flex-1 gradient-brand text-white rounded-xl">
+                <Icon name="Check" size={18} className="mr-1" />{t.create}
+              </Button>
+              <Button variant="outline" onClick={() => { setAdding(false); setName(''); setLink(''); }} className="rounded-xl">
+                {t.cancel}
+              </Button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Шаблон рассылки */}
+      <section className="space-y-2">
+        <Label className="text-sm font-semibold">{t.broadcastTemplate}</Label>
+        <Textarea
+          value={settings.broadcastText}
+          onChange={(e) => update({ broadcastText: e.target.value })}
+          className="rounded-xl min-h-28 font-mono text-xs"
+        />
+        <p className="text-xs text-muted-foreground">
+          {'{make} {model} {year} {price} {mileage} {engine}'}
+        </p>
+      </section>
     </div>
-    <div className="bg-secondary rounded-2xl p-4 flex gap-3">
-      <Icon name="Info" size={20} className="text-primary shrink-0 mt-0.5" />
-      <p className="text-sm text-secondary-foreground">
-        Подключите Telegram-бота, чтобы отправлять объявления автоматически.
-      </p>
-    </div>
-  </div>
-);
+  );
+};
 
 export default Index;
