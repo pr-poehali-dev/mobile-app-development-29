@@ -827,14 +827,20 @@ const Index = () => {
             <h1 className="font-display text-4xl font-bold uppercase leading-none">{t.appTitle}</h1>
             <p className="text-sm opacity-90 mt-2">{t.appSubtitle}</p>
             <div className="flex gap-3 mt-5">
-              <div className="bg-white/15 backdrop-blur rounded-2xl px-4 py-2 flex-1">
+              <button
+                onClick={() => setTab('selling')}
+                className="bg-white/15 hover:bg-white/25 active:scale-95 transition-all backdrop-blur rounded-2xl px-4 py-2 flex-1 text-left"
+              >
                 <div className="font-display text-2xl font-bold">{selling.length}</div>
                 <div className="text-xs opacity-90">{t.statSelling}</div>
-              </div>
-              <div className="bg-white/15 backdrop-blur rounded-2xl px-4 py-2 flex-1">
+              </button>
+              <button
+                onClick={() => setTab('sold')}
+                className="bg-white/15 hover:bg-white/25 active:scale-95 transition-all backdrop-blur rounded-2xl px-4 py-2 flex-1 text-left"
+              >
                 <div className="font-display text-2xl font-bold">{sold.length}</div>
                 <div className="text-xs opacity-90">{t.statSold}</div>
-              </div>
+              </button>
             </div>
           </div>
         </header>
