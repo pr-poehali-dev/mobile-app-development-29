@@ -713,7 +713,9 @@ const Index = () => {
   const [settings, setSettingsState] = useState<Settings>(() => {
     try {
       const saved = localStorage.getItem('autosell_settings');
-      return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+      if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+      const deviceLang: Lang = (navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+      return { ...defaultSettings, lang: deviceLang };
     } catch {
       return defaultSettings;
     }
