@@ -81,6 +81,10 @@ const T = {
     markSold: 'Отметить проданным', restore: 'Вернуть в продажу',
     soldBadge: 'Продано',
     makeCount: (n: number) => `${n} шт.`,
+    buyerTitle: 'Кому продано?', buyerLabel: 'Покупатель',
+    buyerPlaceholder: 'Имя, телефон или заметка',
+    buyerConfirm: 'Подтвердить продажу', buyerSkip: 'Без покупателя',
+    buyerTag: (name: string) => `Покупатель: ${name}`,
     mileageValue: (m: string) => `${m} км`,
     // publish form
     newAd: 'Новое объявление', photos: 'Фотографии', mainPhoto: 'Главное', addPhoto: 'Добавить',
@@ -141,6 +145,10 @@ const T = {
     markSold: 'Mark as sold', restore: 'Return to sale',
     soldBadge: 'Sold',
     makeCount: (n: number) => `${n} pcs`,
+    buyerTitle: 'Sold to whom?', buyerLabel: 'Buyer',
+    buyerPlaceholder: 'Name, phone or note',
+    buyerConfirm: 'Confirm sale', buyerSkip: 'No buyer',
+    buyerTag: (name: string) => `Buyer: ${name}`,
     mileageValue: (m: string) => `${m} km`,
     // publish form
     newAd: 'New ad', photos: 'Photos', mainPhoto: 'Main', addPhoto: 'Add',
@@ -203,6 +211,7 @@ interface Car {
   mileage: string;
   engine: string;
   vin: string;
+  buyer: string;
   description: string;
   photos: string[];
   status: 'selling' | 'sold';
@@ -741,9 +750,10 @@ const Index = () => {
     loadCars();
   };
 
-  const changeStatus = async (id: number, status: 'selling' | 'sold') => {
-    setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
-    await fetch(CARS_URL, { method: 'PUT', headers: carsAuth(), body: JSON.stringify({ id, status }) }).catch(() => {});
+  const changeStatus = async (id: number, status: 'selling' | 'sold', buyer?: string) => {
+    setCars((prev) => prev.map((c) => (c.id === id ? { ...c, status, buyer: status === 'sold' ? (buyer || '') : '' } : c)));
+    const payload: Record<string, unknown> = { id, status, buyer: status === 'sold' ? (buyer || '') : '' };
+    await fetch(CARS_URL, { method: 'PUT', headers: carsAuth(), body: JSON.stringify(payload) }).catch(() => {});
     fetch(BROADCAST_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
@@ -751,7 +761,7 @@ const Index = () => {
     }).catch(() => {});
   };
 
-  const markSold = (id: number) => changeStatus(id, 'sold');
+  const markSold = (id: number, buyer: string) => changeStatus(id, 'sold', buyer);
 
   const restore = (id: number) => changeStatus(id, 'selling');
 
@@ -829,13 +839,7 @@ const Index = () => {
               action={(c) => (
                 <div className="space-y-2">
                   <SendCarDialog car={c} />
-                  <Button
-                    onClick={() => markSold(c.id)}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl"
-                  >
-                    <Icon name="CheckCircle2" size={18} className="mr-2" />
-                    {t.markSold}
-                  </Button>
+                  <SellDialog car={c} onSold={markSold} />
                 </div>
               )}
             />
@@ -1138,6 +1142,12 @@ const CarList = ({ cars, action, empty, sold, groupByMake }: {
               <Tag icon="Fingerprint" text={c.vin ? `VIN ${c.vin}` : ''} />
             </div>
           </div>
+          {sold && c.buyer && (
+            <div className="flex items-center gap-2 bg-accent/10 text-accent-foreground rounded-xl px-3 py-2 text-sm font-medium">
+              <Icon name="UserCheck" size={16} className="text-accent shrink-0" />
+              {t.buyerTag(c.buyer)}
+            </div>
+          )}
           {c.description && <p className="text-sm text-muted-foreground">{c.description}</p>}
           {action(c)}
         </div>
@@ -1198,6 +1208,61 @@ const Tag = ({ icon, text }: { icon: string; text: string }) =>
       {text}
     </span>
   ) : null;
+
+const SellDialog = ({ car, onSold }: { car: Car; onSold: (id: number, buyer: string) => void }) => {
+  const { t, cur } = useSettings();
+  const [open, setOpen] = useState(false);
+  const [buyer, setBuyer] = useState('');
+
+  const confirm = (withBuyer: boolean) => {
+    onSold(car.id, withBuyer ? buyer.trim() : '');
+    setOpen(false);
+    setBuyer('');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl">
+          <Icon name="CheckCircle2" size={18} className="mr-2" />
+          {t.markSold}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-2xl max-w-[360px]">
+        <DialogHeader>
+          <DialogTitle>{t.buyerTitle}</DialogTitle>
+          <DialogDescription>
+            {car.make} {car.model} — {car.price} {cur.symbol}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">{t.buyerLabel}</Label>
+          <Input
+            value={buyer}
+            onChange={(e) => setBuyer(e.target.value)}
+            placeholder={t.buyerPlaceholder}
+            className="rounded-xl h-11"
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && buyer.trim() && confirm(true)}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            onClick={() => confirm(true)}
+            disabled={!buyer.trim()}
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground rounded-xl h-11 font-semibold"
+          >
+            <Icon name="CheckCircle2" size={18} className="mr-2" />
+            {t.buyerConfirm}
+          </Button>
+          <Button variant="ghost" onClick={() => confirm(false)} className="w-full rounded-xl text-muted-foreground">
+            {t.buyerSkip}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const SendCarDialog = ({ car }: { car: Car }) => {
   const { settings, t, cur } = useSettings();

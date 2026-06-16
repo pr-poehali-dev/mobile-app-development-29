@@ -64,7 +64,7 @@ def handler(event: dict, context) -> dict:
 def _list(user_id: int, conn) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute(
-        """SELECT id, make, model, price, year, mileage, engine, description, photos, status, vin
+        """SELECT id, make, model, price, year, mileage, engine, description, photos, status, vin, buyer
            FROM cars WHERE user_id = %s ORDER BY created_at DESC, id DESC""",
         (user_id,),
     )
@@ -96,7 +96,7 @@ def _update(event: dict, user_id: int, conn) -> dict:
 
     fields = []
     values = []
-    for key in ('make', 'model', 'price', 'year', 'mileage', 'engine', 'description', 'status', 'vin'):
+    for key in ('make', 'model', 'price', 'year', 'mileage', 'engine', 'description', 'status', 'vin', 'buyer'):
         if key in b:
             fields.append(f"{key} = %s")
             values.append(b[key])
