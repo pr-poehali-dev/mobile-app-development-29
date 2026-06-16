@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
     'Access-Control-Max-Age': '86400',
 }
@@ -52,9 +52,12 @@ def handler(event: dict, context) -> dict:
         if not admin_id:
             return _resp(403, {'error': 'Доступ только для администратора'})
 
+        if method == 'POST':
+            return _action(event, admin_id, conn)
+
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(
-            """SELECT u.id, u.login, u.is_admin, u.created_at,
+            """SELECT u.id, u.login, u.is_admin, u.is_blocked, u.created_at,
                       COUNT(c.id) AS cars_count,
                       COUNT(c.id) FILTER (WHERE c.status = 'selling') AS selling_count,
                       COUNT(c.id) FILTER (WHERE c.status = 'sold') AS sold_count
@@ -74,3 +77,34 @@ def handler(event: dict, context) -> dict:
         return _resp(200, {'users': users, 'cars': cars})
     finally:
         conn.close()
+
+
+def _action(event: dict, admin_id: int, conn) -> dict:
+    b = json.loads(event.get('body') or '{}')
+    action = b.get('action', '')
+    cur = conn.cursor()
+
+    if action == 'delete_car':
+        car_id = b.get('carId')
+        if not car_id:
+            return _resp(400, {'error': 'Не указан id объявления'})
+        cur.execute("DELETE FROM cars WHERE id = %s", (car_id,))
+        return _resp(200, {'ok': True})
+
+    if action in ('block_user', 'unblock_user'):
+        user_id = b.get('userId')
+        if not user_id:
+            return _resp(400, {'error': 'Не указан пользователь'})
+        if int(user_id) == admin_id:
+            return _resp(400, {'error': 'Нельзя заблокировать самого себя'})
+        cur.execute("SELECT is_admin FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return _resp(400, {'error': 'Нельзя заблокировать администратора'})
+        blocked = action == 'block_user'
+        cur.execute("UPDATE users SET is_blocked = %s WHERE id = %s", (blocked, user_id))
+        if blocked:
+            cur.execute("UPDATE sessions SET expires_at = NOW() WHERE user_id = %s", (user_id,))
+        return _resp(200, {'ok': True})
+
+    return _resp(400, {'error': 'Неизвестное действие'})

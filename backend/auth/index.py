@@ -101,10 +101,12 @@ def _login(body: dict, conn) -> dict:
     password = body.get('password') or ''
 
     cur = conn.cursor()
-    cur.execute("SELECT id, password_hash, is_admin FROM users WHERE login = %s", (login,))
+    cur.execute("SELECT id, password_hash, is_admin, is_blocked FROM users WHERE login = %s", (login,))
     row = cur.fetchone()
     if not row or not _check_password(password, row[1]):
         return _resp(401, {'error': 'Неверный логин или пароль'})
+    if row[3]:
+        return _resp(403, {'error': 'Аккаунт заблокирован администратором'})
 
     token = _create_session(row[0], conn)
     return _resp(200, {'token': token, 'login': login, 'isAdmin': bool(row[2])})
