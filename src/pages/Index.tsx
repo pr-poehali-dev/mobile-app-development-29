@@ -1073,6 +1073,11 @@ const CarList = ({ cars, action, empty, sold, groupByMake }: {
 }) => {
   const [activePhoto, setActivePhoto] = useState<Record<number, number>>({});
   const { cur, t } = useSettings();
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const scrollToMake = (make: string) => {
+    sectionRefs.current[make]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   if (cars.length === 0)
     return (
@@ -1148,11 +1153,30 @@ const CarList = ({ cars, action, empty, sold, groupByMake }: {
 
   return (
     <div className="space-y-6">
+      {makes.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 pb-1 sticky top-0 z-10 bg-background/90 backdrop-blur py-2">
+          {makes.map((make) => (
+            <button
+              key={make}
+              onClick={() => scrollToMake(make)}
+              className="shrink-0 flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium hover:border-primary hover:text-primary transition-colors"
+            >
+              {make}
+              <span className="text-xs text-muted-foreground">{cars.filter((c) => c.make === make).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {makes.map((make) => {
         const group = cars.filter((c) => c.make === make);
         return (
-          <div key={make} className="space-y-3">
-            <div className="flex items-center gap-2 sticky top-0 z-[1]">
+          <div
+            key={make}
+            ref={(el) => (sectionRefs.current[make] = el)}
+            className="space-y-3 scroll-mt-16"
+          >
+            <div className="flex items-center gap-2">
               <h3 className="font-display text-lg font-bold uppercase tracking-wide">{make}</h3>
               <span className="text-xs font-medium bg-primary/10 text-primary rounded-full px-2.5 py-0.5">
                 {t.makeCount(group.length)}
