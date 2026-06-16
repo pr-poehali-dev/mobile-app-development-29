@@ -557,7 +557,11 @@ const Index = () => {
           <div className="absolute right-16 top-20 w-20 h-20 bg-white/10 rounded-full" />
           <div className="relative">
             <div className="flex items-center gap-2 mb-1">
-              <Icon name="Zap" size={20} />
+              <img
+                src="https://cdn.poehali.dev/projects/6ab20892-3900-4803-af4f-d41104923ec6/files/7452054d-be5a-4e6f-a857-f94069c0936d.jpg"
+                alt="ALLISALE"
+                className="w-7 h-7 rounded-lg object-cover shadow-sm"
+              />
               <span className="text-sm font-medium uppercase tracking-widest opacity-90">ALLISALE</span>
             </div>
             <h1 className="font-display text-4xl font-bold uppercase leading-none">Продажа авто</h1>
