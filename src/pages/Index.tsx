@@ -558,7 +558,7 @@ const Index = () => {
           <div className="relative">
             <div className="flex items-center gap-2 mb-1">
               <Icon name="Zap" size={20} />
-              <span className="text-sm font-medium uppercase tracking-widest opacity-90">AutoSell</span>
+              <span className="text-sm font-medium uppercase tracking-widest opacity-90">ALLISALE</span>
             </div>
             <h1 className="font-display text-4xl font-bold uppercase leading-none">Продажа авто</h1>
             <p className="text-sm opacity-90 mt-2">Загружай, редактируй и отправляй в Telegram</p>

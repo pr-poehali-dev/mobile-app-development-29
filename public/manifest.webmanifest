@@ -1,6 +1,6 @@
 {
-  "name": "AutoSell — Продажа авто",
-  "short_name": "AutoSell",
+  "name": "ALLISALE — Продажа авто",
+  "short_name": "ALLISALE",
   "description": "Загружай, редактируй и отправляй объявления о продаже авто в Telegram",
   "start_url": "/",
   "scope": "/",
