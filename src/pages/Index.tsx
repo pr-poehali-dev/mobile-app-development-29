@@ -179,6 +179,11 @@ const Index = () => {
 
   const restore = (id: number) => changeStatus(id, 'selling');
 
+  const deleteCar = async (id: number) => {
+    setCars((prev) => prev.filter((c) => c.id !== id));
+    await fetch(`${CARS_URL}?id=${id}`, { method: 'DELETE', headers: carsAuth() }).catch(() => {});
+  };
+
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -294,10 +299,22 @@ const Index = () => {
                 sold
                 empty={soldQuery ? t.nothingFound : t.emptySold}
                 action={(c) => (
-                  <Button variant="outline" onClick={() => restore(c.id)} className="w-full rounded-xl">
-                    <Icon name="Undo2" size={18} className="mr-2" />
-                    {t.restore}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button variant="outline" onClick={() => restore(c.id)} className="w-full rounded-xl">
+                      <Icon name="Undo2" size={18} className="mr-2" />
+                      {t.restore}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (window.confirm(t.confirmDeleteCarDesc(`${c.make} ${c.model}`))) deleteCar(c.id);
+                      }}
+                      className="w-full rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
+                    >
+                      <Icon name="Trash2" size={18} className="mr-2" />
+                      {t.delete}
+                    </Button>
+                  </div>
                 )}
               />
             </div>
