@@ -16,7 +16,6 @@ export const SelectField = ({ label, options, value, onChange, placeholder, allo
   allowCustom?: boolean;
 }) => {
   const { t } = useSettings();
-  const knownValues = [...options, ...(allowCustom ? ['Другая'] : [])];
   const isCustom = allowCustom && value !== '' && !options.includes(value) && value !== 'Другая';
   const selectValue = isCustom ? 'Другая' : value;
 
