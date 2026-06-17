@@ -76,7 +76,7 @@ def _normalize_chat(link: str) -> str:
     return '@' + link
 
 
-SOLD_MARK = '✅ ПРОДАНО ✅'
+SOLD_MARK = '✅ SOLD ✅'
 
 
 def handler(event: dict, context) -> dict:
