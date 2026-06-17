@@ -113,6 +113,16 @@ export const T = {
     confirmUnblockUserDesc: (login: string) => `«${login}» снова сможет входить в приложение.`,
     confirm: 'Подтвердить',
     loadError: 'Не удалось загрузить данные',
+    // bot token
+    botSection: 'Telegram-бот',
+    botHint: 'Создайте бота у @BotFather, отправьте /newbot и вставьте сюда полученный токен. Затем добавьте бота администратором в свои группы.',
+    botTokenLabel: 'Токен бота',
+    botTokenPlaceholder: '123456789:AAH...',
+    botConnect: 'Подключить', botDisconnect: 'Отключить',
+    botConnected: (name: string) => name ? `Подключён: @${name}` : 'Бот подключён',
+    botNotConnected: 'Бот не подключён',
+    botSaved: 'Бот подключён', botRemoved: 'Бот отключён',
+    botInvalid: 'Неверный токен. Проверьте, что скопировали его полностью.',
   },
   en: {
     publish: 'Publish', selling: 'For sale', sold: 'Sold', broadcast: 'Broadcast', settings: 'Settings',
@@ -179,6 +189,16 @@ export const T = {
     confirmUnblockUserDesc: (login: string) => `«${login}» will be able to log in to the app again.`,
     confirm: 'Confirm',
     loadError: 'Failed to load data',
+    // bot token
+    botSection: 'Telegram bot',
+    botHint: 'Create a bot via @BotFather, send /newbot and paste the token here. Then add the bot as an admin to your groups.',
+    botTokenLabel: 'Bot token',
+    botTokenPlaceholder: '123456789:AAH...',
+    botConnect: 'Connect', botDisconnect: 'Disconnect',
+    botConnected: (name: string) => name ? `Connected: @${name}` : 'Bot connected',
+    botNotConnected: 'Bot not connected',
+    botSaved: 'Bot connected', botRemoved: 'Bot disconnected',
+    botInvalid: 'Invalid token. Make sure you copied it completely.',
   },
 };
 

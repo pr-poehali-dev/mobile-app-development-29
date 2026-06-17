@@ -52,6 +52,15 @@ def _tg_call(bot_token: str, method: str, payload: dict) -> dict:
         return {'ok': False, 'description': str(e)}
 
 
+def _get_bot_token(user_id: int, conn) -> str:
+    cur = conn.cursor()
+    cur.execute("SELECT bot_token FROM user_settings WHERE user_id = %s", (user_id,))
+    row = cur.fetchone()
+    if row and row[0]:
+        return row[0].strip()
+    return ''
+
+
 def _normalize_chat(link: str) -> str:
     link = (link or '').strip()
     if not link:
@@ -71,7 +80,7 @@ SOLD_MARK = '✅ ПРОДАНО ✅'
 
 
 def handler(event: dict, context) -> dict:
-    '''Рассылка объявлений в Telegram-группы и пометка ПРОДАНО/возврат. Токен бота берётся из секрета на сервере. Доступ только по токену владельца.'''
+    '''Рассылка объявлений в Telegram-группы и пометка ПРОДАНО/возврат. У каждого пользователя свой токен бота (хранится в БД). Действия: send, mark_sold, restore, set_token, token_status. Доступ только по токену владельца.'''
     method = event.get('httpMethod', 'POST')
     if method == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'isBase64Encoded': False, 'body': ''}
@@ -85,12 +94,17 @@ def handler(event: dict, context) -> dict:
         if not user_id:
             return _resp(401, {'error': 'Не авторизован'})
 
-        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-        if not bot_token:
-            return _resp(500, {'error': 'Не задан токен Telegram-бота. Добавьте секрет TELEGRAM_BOT_TOKEN.'})
-
         body = json.loads(event.get('body') or '{}')
         action = body.get('action', 'send')
+
+        if action == 'token_status':
+            return _resp(200, {'connected': bool(_get_bot_token(user_id, conn))})
+        if action == 'set_token':
+            return _set_token(body, user_id, conn)
+
+        bot_token = _get_bot_token(user_id, conn)
+        if not bot_token:
+            return _resp(400, {'error': 'Не подключён Telegram-бот. Добавьте токен в Настройках.'})
 
         if action == 'send':
             return _send(body, user_id, bot_token, conn)
@@ -99,6 +113,31 @@ def handler(event: dict, context) -> dict:
         return _resp(400, {'error': 'Неизвестное действие'})
     finally:
         conn.close()
+
+
+def _set_token(body: dict, user_id: int, conn) -> dict:
+    raw = (body.get('token') or '').strip()
+    cur = conn.cursor()
+
+    if not raw:
+        cur.execute(
+            """INSERT INTO user_settings (user_id, bot_token) VALUES (%s, '')
+               ON CONFLICT (user_id) DO UPDATE SET bot_token = ''""",
+            (user_id,),
+        )
+        return _resp(200, {'ok': True, 'connected': False})
+
+    info = _tg_call(raw, 'getMe', {})
+    if not info.get('ok'):
+        return _resp(400, {'error': 'Неверный токен бота. Проверьте, что скопировали его из @BotFather полностью.'})
+
+    cur.execute(
+        """INSERT INTO user_settings (user_id, bot_token) VALUES (%s, %s)
+           ON CONFLICT (user_id) DO UPDATE SET bot_token = EXCLUDED.bot_token""",
+        (user_id, raw),
+    )
+    bot_username = info.get('result', {}).get('username', '')
+    return _resp(200, {'ok': True, 'connected': True, 'botUsername': bot_username})
 
 
 def _send(body: dict, user_id: int, bot_token: str, conn) -> dict:

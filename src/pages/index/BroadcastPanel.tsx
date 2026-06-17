@@ -1,11 +1,95 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Car, Settings, CURRENCIES, useSettings, sendCarsToGroups } from './shared';
+import { Car, Settings, CURRENCIES, BROADCAST_URL, useSettings, sendCarsToGroups } from './shared';
+
+const botApi = (action: string, extra: Record<string, unknown> = {}) =>
+  fetch(BROADCAST_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': localStorage.getItem('autosell_token') || '' },
+    body: JSON.stringify({ action, ...extra }),
+  }).then((r) => r.json());
+
+const BotTokenSection = () => {
+  const { t } = useSettings();
+  const [connected, setConnected] = useState(false);
+  const [botUsername, setBotUsername] = useState('');
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    botApi('token_status').then((d) => setConnected(!!d.connected)).catch(() => {});
+  }, []);
+
+  const connect = async () => {
+    if (!token.trim()) return;
+    setBusy(true);
+    try {
+      const d = await botApi('set_token', { token: token.trim() });
+      if (d.connected) {
+        setConnected(true);
+        setBotUsername(d.botUsername || '');
+        setToken('');
+        toast.success(t.botSaved);
+      } else {
+        toast.error(t.botInvalid);
+      }
+    } catch {
+      toast.error(t.botInvalid);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disconnect = async () => {
+    setBusy(true);
+    try {
+      await botApi('set_token', { token: '' });
+      setConnected(false);
+      setBotUsername('');
+      toast.success(t.botRemoved);
+    } catch {
+      /* ignore */
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="space-y-2">
+      <Label className="text-sm font-semibold">{t.botSection}</Label>
+      <p className="text-xs text-muted-foreground">{t.botHint}</p>
+      {connected ? (
+        <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-3">
+          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent shrink-0">
+            <Icon name="BotMessageSquare" size={20} fallback="Bot" />
+          </div>
+          <div className="min-w-0 flex-1 text-sm font-medium">{t.botConnected(botUsername)}</div>
+          <Button variant="outline" size="sm" disabled={busy} onClick={disconnect} className="rounded-xl">
+            {t.botDisconnect}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Input
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder={t.botTokenPlaceholder}
+            className="rounded-xl font-mono text-xs"
+          />
+          <Button onClick={connect} disabled={busy || !token.trim()} className="w-full gradient-brand text-white rounded-xl">
+            <Icon name={busy ? 'Loader2' : 'Plug'} size={18} className={`mr-1 ${busy ? 'animate-spin' : ''}`} />
+            {t.botConnect}
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+};
 
 export const Broadcast = ({ count, cars }: { count: number; cars: Car[] }) => {
   const { settings, t, cur } = useSettings();
@@ -130,6 +214,9 @@ export const SettingsPanel = () => {
           ))}
         </div>
       </section>
+
+      {/* Telegram-бот */}
+      <BotTokenSection />
 
       {/* Telegram-группы */}
       <section className="space-y-3">
